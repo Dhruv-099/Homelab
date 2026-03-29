@@ -1,0 +1,31 @@
+### --- Environment & Secrets ---
+# Ignore all .env files (where your DB passwords and API keys live)
+.env
+*.env
+.env.*
+!.env.example
+
+### --- Docker & Infrastructure ---
+# Ignore local data volumes (don't push your actual Postgres data or Immich photos!)
+**/data/
+**/postgres/
+**/db_data/
+**/redis_data/
+**/library/
+**/upload/
+**/thumbs/
+**/encoded-video/
+
+### --- OS & IDE Files ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+### --- Python/Data Science (For your MLOps projects) ---
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+.ipynb_checkpoints/
