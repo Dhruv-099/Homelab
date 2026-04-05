@@ -1,0 +1,15 @@
+services:
+  beszel:
+    container_name: beszel
+    image: henrygd/beszel:latest
+    restart: unless-stopped
+    ports:
+      - 8232:8090
+    volumes:
+      - ./data:/beszel_data
+    networks:
+      - homelab
+
+networks:
+  homelab:
+    external: true
