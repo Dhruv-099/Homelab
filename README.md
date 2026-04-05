@@ -15,7 +15,7 @@ This repository serves as the **Source of Truth** for my homelab. It manages the
 
 ---
 
-## 📂 Repository Structure
+## Repository Structure
 
 ```text
 
@@ -31,12 +31,12 @@ This repository serves as the **Source of Truth** for my homelab. It manages the
 
 ---
 
-## 🚀 Deployment Workflow
+## Deployment Workflow
 
 ### 1. Adding a New Service
 1. Create a directory in `<service-name>`.
 2. Add a `docker-compose.yml` file.
-3. Define secrets in a local `.env` file (never commit secrets to Git!).
+3. Define secrets in a local `.env` file.
 4. Deploy via Portainer pointing to this repository.
 
 ### 2. Maintenance Commands
