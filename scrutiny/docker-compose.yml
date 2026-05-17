@@ -1,0 +1,25 @@
+services:
+  scrutiny:
+    container_name: scrutiny
+    image: ghcr.io/analogj/scrutiny:master-omnibus
+    privileged: true
+    restart: unless-stopped
+    volumes:
+      # Host udev (read-only): required for disk detection and S.M.A.R.T.
+      # Keep this private when publishing repo — exposes host hardware info.
+      - /run/udev:/run/udev:ro
+      # Host /dev: needed to access block devices. Sensitive — avoid public repos.
+      - /dev:/dev
+      # Local config (mapped to container). Add ./config to .gitignore if it
+      # contains credentials or host-specific settings you don't want to publish.
+      - ./config:/opt/scrutiny/config
+      # InfluxDB data storage. Contains monitoring data — keep private and back up.
+      - ./influxdb:/opt/scrutiny/influxdb
+    ports:
+      - 8085:8080
+    networks:
+      - homelab
+
+networks:
+  homelab:
+    external: true
