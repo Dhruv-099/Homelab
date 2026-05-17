@@ -1,0 +1,42 @@
+networks:
+  homelab:
+    external: true
+  forgejo:
+    external: false
+
+services:
+  server:
+    image: codeberg.org/forgejo/forgejo:14
+    container_name: forgejo
+    environment:
+      # Runtime user IDs inside the container. Usually safe to keep, but
+      # don't expose admin credentials here; use `.env` for sensitive values.
+      - USER_UID=1001
+      - USER_GID=1001
+    restart: always
+    networks:
+      - homelab
+      - forgejo
+    volumes:
+      # Container data directory: contains repositories and config — set via
+      # `.env` and do not commit actual repo data.
+      - ${FORGEJO_DATA_DIR}:/data
+      # Sync host timezone (read-only). Fine to keep but exposes host timezone.
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - '3000:3000'
+      - '222:22'
+  db:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      # Database credentials: DO NOT commit plaintext passwords. Use an
+      # external `.env` or Docker secrets and add `.env` to .gitignore.
+      - POSTGRES_USER=forgejo
+      - POSTGRES_PASSWORD=${FORGEJO_DB_PASSWORD}
+      - POSTGRES_DB=forgejo
+    networks:
+      - forgejo
+    volumes:
+      # Postgres data directory. Set via `.env` to avoid revealing host layout.
+      - ${FORGEJO_PGDATA_DIR}:/var/lib/postgresql/data

@@ -1,0 +1,22 @@
+services:
+  jellyfin:
+    container_name: jellyfin
+    image: ghcr.io/hotio/jellyfin:latest
+    restart: unless-stopped
+    environment:
+      PUID: 1001
+      PGID: 1001
+      TZ: Asia/Kolkata
+    ports:
+      - 8096:8096
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ~/jellyfin/config:/config
+      # Storage for media files (read-only). Use `${MEDIA_DIR}` in `.env`.
+      - ${MEDIA_DIR}:/data:ro
+    networks:
+      - homelab
+
+networks:
+  homelab:
+    external: true

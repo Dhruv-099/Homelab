@@ -1,0 +1,52 @@
+services:
+  nextcloud:
+    image: nextcloud:latest
+    container_name: nextcloud
+    restart: unless-stopped
+    environment:
+      # IMPORTANT: Use `.env` for real secrets. See .env.example and SECURITY.md.
+      - POSTGRES_HOST=nextcloud_db
+      - POSTGRES_DB=nextcloud
+      - POSTGRES_USER=nextcloud
+      - POSTGRES_PASSWORD=${NEXTCLOUD_DB_PASSWORD}
+      - NEXTCLOUD_ADMIN_USER=admin
+      - NEXTCLOUD_ADMIN_PASSWORD=${NEXTCLOUD_ADMIN_PASSWORD}
+      # Trusted domain: set in your local `.env` (do not commit real domains)
+      - NEXTCLOUD_TRUSTED_DOMAINS=${NEXTCLOUD_TRUSTED_DOMAIN}
+      - OVERWRITEPROTOCOL=https
+      - OVERWRITECLIURL=https://${NEXTCLOUD_TRUSTED_DOMAIN}
+    volumes:
+      - ./config:/var/www/html/config
+      - ./custom_apps:/var/www/html/custom_apps
+      - ./themes:/var/www/html/themes
+      # Persistent Nextcloud data. Host path reveals storage layout — consider
+      # using a generic path (e.g. `/srv/nextcloud`) or document and exclude
+      # from public repos if it contains sensitive data.
+      # Persistent Nextcloud data. Use an env var to avoid exposing host layout.
+      - ${NEXTCLOUD_DATA_DIR}:/var/www/html/data
+    ports:
+      - 8088:80
+    depends_on:
+      - nextcloud_db
+    networks:
+      - homelab
+      - nextcloud
+
+  nextcloud_db:
+    image: postgres:16
+    container_name: nextcloud_db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=nextcloud
+      - POSTGRES_USER=nextcloud
+      - POSTGRES_PASSWORD=${NEXTCLOUD_DB_PASSWORD}
+    volumes:
+      - ./db:/var/lib/postgresql/data
+    networks:
+      - nextcloud
+
+networks:
+  homelab:
+    external: true
+  nextcloud:
+    name: nextcloud_network

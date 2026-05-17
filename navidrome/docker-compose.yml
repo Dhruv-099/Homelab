@@ -10,8 +10,11 @@ services:
       ND_BASEURL: ""
       TZ: Asia/Kolkata
     volumes:
+      # Persist Navidrome database and runtime data on the host
       - ./data:/data
-      - /mnt/elements-1tb/DriveD/My Songs:/music:ro
+      # Mount readonly music library from host storage for playback
+      # Use `${NAVIDROME_MUSIC_DIR}` in `.env` to avoid exposing host path.
+      - ${NAVIDROME_MUSIC_DIR}:/music:ro
     ports:
       - 4533:4533
     networks:

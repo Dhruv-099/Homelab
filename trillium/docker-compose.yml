@@ -1,0 +1,18 @@
+services:
+  trilium:
+    image: triliumnext/trilium:latest
+    container_name: trilium
+    restart: unless-stopped
+    environment:
+      - TZ=Asia/Kolkata
+    volumes:
+      # Persist Trilium notes, attachments, and database files on the host
+      - ./data:/home/node/trilium-data
+    ports:
+      - 8181:8080
+    networks:
+      - homelab
+
+networks:
+  homelab:
+    external: tru

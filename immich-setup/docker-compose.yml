@@ -4,7 +4,9 @@ services:
     container_name: immich_server
     image: ghcr.io/immich-app/immich-server:${IMMICH_VERSION:-release}
     volumes:
+      # Store uploaded media files on the host path configured by UPLOAD_LOCATION
       - ${UPLOAD_LOCATION}:/data
+      # Use host timezone settings inside the container
       - /etc/localtime:/etc/localtime:ro
     env_file:
       - .env
@@ -23,6 +25,7 @@ services:
     container_name: immich_machine_learning
     image: ghcr.io/immich-app/immich-machine-learning:${IMMICH_VERSION:-release}
     volumes:
+      # Persist ML model cache between container restarts using a Docker volume
       - model-cache:/cache
     env_file:
       - .env
@@ -50,6 +53,7 @@ services:
       POSTGRES_DB: ${DB_DATABASE_NAME}
       POSTGRES_INITDB_ARGS: '--data-checksums'
     volumes:
+      # Persist PostgreSQL database files on the host path configured by DB_DATA_LOCATION
       - ${DB_DATA_LOCATION}:/var/lib/postgresql/data
     shm_size: 128mb
     restart: always

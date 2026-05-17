@@ -1,0 +1,144 @@
+x-common-keys: &common-keys
+  restart: unless-stopped
+  logging:
+    driver: json-file
+  environment:
+    PUID: 1001
+    PGID: 1001
+    TZ: Asia/Kolkata
+  dns:
+    - 1.1.1.1
+    - 1.0.0.1
+  networks:
+    - homelab
+    - arr
+
+services:
+  radarr:
+    <<: *common-keys
+    container_name: radarr
+    image: ghcr.io/hotio/radarr:latest
+    ports:
+      - 7878:7878
+    volumes:
+      # Use host timezone information inside the container
+      - /etc/localtime:/etc/localtime:ro
+      # Persist Radarr application settings and metadata on the host
+      - ~/arr/config/radarr:/config
+      # Mount shared media library from host storage. Use `${MEDIA_DIR}` in
+      # `.env` to avoid exposing host paths in the repo.
+      - ${MEDIA_DIR}:/data
+
+  sonarr:
+    <<: *common-keys
+    container_name: sonarr
+    image: ghcr.io/hotio/sonarr:latest
+    ports:
+      - 8989:8989
+    volumes:
+      # Use host timezone information inside the container
+      - /etc/localtime:/etc/localtime:ro
+      # Persist Sonarr application settings and metadata on the host
+      - ~/arr/config/sonarr:/config
+      # Mount shared media library from host storage. Use `${MEDIA_DIR}` in
+      # `.env` to avoid exposing host paths in the repo.
+      - ${MEDIA_DIR}:/data
+
+  lidarr:
+    <<: *common-keys
+    container_name: lidarr
+    image: ghcr.io/hotio/lidarr:latest
+    ports:
+      - 8686:8686
+    volumes:
+      # Use host timezone information inside the container
+      - /etc/localtime:/etc/localtime:ro
+      # Persist Lidarr application settings and metadata on the host
+      - ~/arr/config/lidarr:/config
+      # Mount shared media library from host storage. Use `${MEDIA_DIR}` in
+      # `.env` to avoid exposing host paths in the repo.
+      - ${MEDIA_DIR}:/data
+
+  bazarr:
+    <<: *common-keys
+    container_name: bazarr
+    image: ghcr.io/hotio/bazarr:latest
+    ports:
+      - 6767:6767
+    volumes:
+      # Use host timezone information inside the container
+      - /etc/localtime:/etc/localtime:ro
+      # Persist Bazarr application settings and metadata on the host
+      - ~/arr/config/bazarr:/config
+      # Mount shared media library from host storage. Use `${MEDIA_DIR}` in
+      # `.env` to avoid exposing host paths in the repo.
+      - ${MEDIA_DIR}:/data
+
+  prowlarr:
+    <<: *common-keys
+    container_name: prowlarr
+    image: ghcr.io/hotio/prowlarr:latest
+    ports:
+      - 9696:9696
+    volumes:
+      # Use host timezone information inside the container
+      - /etc/localtime:/etc/localtime:ro
+      # Persist Prowlarr application settings and metadata on the host
+      - ~/arr/config/prowlarr:/config
+
+  qbittorrent:
+    container_name: qbittorrent
+    image: ghcr.io/hotio/qbittorrent:latest
+    restart: unless-stopped
+    ports:
+      - 8090:8080
+      - 6881:6881
+      - 6881:6881/udp
+    environment:
+      PUID: 1001
+      PGID: 1001
+      TZ: Asia/Kolkata
+      WEBUI_PORT: 8090
+      TORRENTING_PORT: 6881
+    dns:
+      - 1.1.1.1
+      - 1.0.0.1
+    volumes:
+      # Use host timezone information inside the container
+      - /etc/localtime:/etc/localtime:ro
+      # Persist qBittorrent settings and runtime state on the host
+      - ~/arr/config/qbittorrent:/config
+      # Mount shared media library from host storage. Use `${MEDIA_DIR}` in
+      # `.env` to avoid exposing host paths in the repo.
+      - ${MEDIA_DIR}:/data
+    networks:
+      - homelab
+      - arr
+  jellyseerr:
+    <<: *common-keys
+    container_name: jellyseerr
+    image: ghcr.io/seerr-team/seerr:latest
+    ports:
+      - 5055:5055
+    volumes:
+      # Use host timezone information inside the container
+      - /etc/localtime:/etc/localtime:ro
+      # Persist Jellyseerr application settings and metadata on the host
+      - ~/arr/config/jellyseerr:/app/config
+  flaresolverr:
+    container_name: flaresolverr
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    restart: unless-stopped
+    environment:
+      - LOG_LEVEL=info
+      - TZ=Asia/Kolkata
+    ports:
+      - 8191:8191
+    networks:
+      - homelab
+      - arr
+networks:
+  homelab:
+    external: true
+  arr:
+    name: arr_network

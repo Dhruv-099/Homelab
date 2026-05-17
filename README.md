@@ -1,59 +1,76 @@
-
-
 # Homelab Infrastructure-as-Code (IaC)
 
-This repository serves as the **Source of Truth** for my homelab. It manages the deployment, configuration, and versioning of all self-hosted services across the HP EliteDesk node.4
+This repository is the proof of work for a personal homelab built on Docker Compose and Proxmox.
+
+It documents the architecture, services, and infrastructure used in the environment. For design rationale and deeper explanation, see my Medium articles at https://medium.com/@dhruvb2603. If you want to reproduce the stack, follow the separate guide in `REPRODUCIBLE.md`.
 
 ---
 
-##  Tech Stack
-* **Orchestration:** Docker Compose / Portainer
-* **Infrastructure:** Proxmox VE
-* **Networking:** Nginx Proxy Manager, Netbird (VPN)
-* **Storage:** Local ZFS + AWS S3 (Off-site Backup)
-* **Documentation:** [BookStack](http://wiki.bobalhouse.co.in)
+## Homelab at a glance
+- Host: HP EliteDesk 705 running Proxmox VE
+- Orchestration: Docker Compose / Portainer
+- Networking: Nginx Proxy Manager, Netbird VPN
+- Storage: local block storage with on-prem backups
 
 ---
 
-## Repository Structure
+## Service inventory
 
-```text
-
-│── bookstack/          # Wiki & Documentation
-│── forgejo/            # Git Source Control
-│── netbird/            # Mesh VPN Management
-│── arr-stack/          # Media Management
-├── scripts/                # Automation & Maintenance scripts
-│   ├── backup-check.py     # Duplicati status auditor
-│   └── node-prune.sh       # Docker resource cleanup
-└── .env.example            # Template for environment variables
-```
-
----
-
-## Deployment Workflow
-
-### 1. Adding a New Service
-1. Create a directory in `<service-name>`.
-2. Add a `docker-compose.yml` file.
-3. Define secrets in a local `.env` file.
-4. Deploy via Portainer pointing to this repository.
-
-### 2. Maintenance Commands
-- Automatic updates done by watchtower
----
-
-## 🛡️ Backup Policy (3-2-1 Strategy)
-- **Primary:** Local storage.
-- **Secondary:** Daily automated backups via **Duplicati**.
-- **Off-site:** Encrypted archives pushed to **AWS S3** (Standard-IA).
+| Area | Service | Folder | Purpose |
+| --- | --- | --- | --- |
+| Git hosting | Forgejo | `forgejo/` | self-hosted Git, issue tracking, code collaboration |
+| File sync | Nextcloud | `nextcloud/` | file sharing, calendar, contacts |
+| Media | Jellyfin | `jellyfin/` | media streaming |
+| Media management | Radarr/Sonarr/Lidarr/Bazarr/Prowlarr | `arr/` | automated media downloads and organization |
+| Music | Navidrome | `navidrome/` | personal music streaming |
+| Photos | Immich | `immich-setup/` | photo backup and management |
+| Monitoring | Scrutiny | `scrutiny/` | drive health and SMART monitoring |
+| Passwords | Vaultwarden | `vaultwarden/` | secrets and password management |
+| Reverse proxy | Nginx Proxy Manager | `proxymanager/` | host routing, SSL termination |
+| Container UI | Portainer | `portainer/` | container management UI |
 
 ---
 
-## 📋 Infrastructure Inventory
-| Node Name | Hardware | Role | RAM | NVME| HDD |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **PVE-01** | HP EliteDesk 705 | Management / Prod | 32 GB | 512 GB| 1Tb+ 2Tb|
+## Architecture highlights
+This repository is organized as a modular homelab stack. Each service has its own directory and compose file so the stack can scale by adding or removing services without changing the whole repo.
+
+- Service definitions live in dedicated folders, making it easy to manage and update one stack at a time.
+- Most services share the `homelab` network for internal communication, while external traffic is routed through Nginx Proxy Manager.
+- Host-specific paths, credentials, and runtime configuration are moved into `.env` to keep the repository reusable and private.
+- Sensitive mounts and secrets are documented in `SECURITY.md` rather than embedded inside compose files.
 
 ---
-*Maintained by Dhruv Bobal.*
+
+## What this repo includes
+- Service stacks in dedicated folders
+- `.env.example` as a template for all required local variables
+- `SECURITY.md` with guidance on secrets handling
+- `REPRODUCIBLE.md` with a fully reproducible deployment guide
+
+---
+
+## Intranet services
+This homelab is intended to run internal services on the LAN. Internal DNS and proxy configuration are handled with:
+
+- `proxymanager/` — Nginx Proxy Manager
+- AdGuard Home service for DNS rewrites
+
+The reproducible guide covers how to wire these services together.
+
+---
+
+---
+
+## Reproducible setup
+If you want to reproduce this stack, see `REPRODUCIBLE.md`.
+
+---
+
+## Backup policy
+- Local primary storage
+- Daily Duplicati backups
+- Encrypted off-site backups
+
+---
+
+Maintained by Dhruv Bobal.

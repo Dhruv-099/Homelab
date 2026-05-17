@@ -1,0 +1,22 @@
+services:
+  portainer:
+    container_name: portainer
+    image: portainer/portainer-ce:sts
+    restart: always
+    volumes:
+      # Allow Portainer to manage the Docker daemon on the host
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Persist Portainer settings and data across restarts
+      - portainer_data:/data
+    ports:
+      - 9443:9443
+    networks:
+      - homelab
+
+volumes:
+  portainer_data:
+    name: portainer_data
+
+networks:
+  homelab:
+    external: true

@@ -10,6 +10,7 @@ services:
       WATCHTOWER_SCHEDULE: "0 0 15 * * *"
       DOCKER_API_VERSION: "1.45"
     volumes:
+      # Allow Watchtower to access the Docker daemon to update containers
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - homelab

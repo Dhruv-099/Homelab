@@ -1,0 +1,18 @@
+services:
+  vaultwarden:
+    image: vaultwarden/server:latest
+    container_name: vaultwarden
+    restart: always
+    volumes:
+     # Persist Vaultwarden database and attachments on the host. Set path via
+     # `.env` to avoid exposing host layout.
+     - ${VAULTWARDEN_DATA_DIR}:/data
+    environment:
+     - SIGNUPS_ALLOWED=false
+     - DOMAIN=${VAULTWARDEN_DOMAIN}
+     - ADMIN_TOKEN=${VAULTWARDEN_ADMIN_TOKEN}
+    networks:
+     - homelab
+networks:
+  homelab:
+    external: true 

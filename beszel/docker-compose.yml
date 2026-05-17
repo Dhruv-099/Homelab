@@ -6,6 +6,7 @@ services:
     ports:
       - 8232:8090
     volumes:
+      # Persist Beszel application data and configuration on the host
       - ./data:/beszel_data
     networks:
       - homelab
