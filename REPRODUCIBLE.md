@@ -129,9 +129,53 @@ Make sure your LAN clients use AdGuard Home as their DNS resolver.
 
 ## Cloudflare / public access
 
-If you want to expose services publicly, use Cloudflare Tunnel or cloud DNS.
+Use Cloudflare DNS, Nginx Proxy Manager, and Cloudflare Tunnel to expose services securely.
 
-The repository's `README.md` shows this homelab architecture and may include examples for ingress routing.
+### Step 1: Add a DNS record in Cloudflare
+
+1. Open the Cloudflare dashboard and go to **DNS** → **Add record**.
+2. Set:
+   - Type: `CNAME`
+   - Name: `<subdomain>`
+   - Target / Content: `<cloudflared-tunnel-hostname>`
+   - Proxy: `ON` (orange cloud)
+
+### Step 2: Add a Proxy Host in Nginx Proxy Manager
+
+1. Open NPM and go to **Proxy Hosts** → **Add Proxy Host**.
+2. Configure:
+   - Domain Names: `<subdomain.your-domain.com>`
+   - Scheme: `http`
+   - Forward Hostname: `<container_or_host_ip>`
+   - Forward Port: `<service_port>`
+   - Websockets: `ON` if the service requires them
+3. In the SSL tab:
+   - Request a new SSL certificate
+   - Choose DNS Challenge
+   - Use your Cloudflare API token
+   - Enable **Force SSL**
+4. Save the proxy host.
+
+### Step 3: Update Cloudflare Tunnel configuration
+
+Edit `/etc/cloudflared/config.yml` and add the new hostname before the catch-all rule under `ingress:`.
+
+```yaml
+ingress:
+  - hostname: <subdomain.your-domain.com>
+    service: http://localhost:<service_port>
+    originRequest:
+      noTLSVerify: true
+    httpHostHeader: <subdomain.your-domain.com>
+
+  - service: http_status:404
+```
+
+Then restart Cloudflared:
+
+```bash
+sudo systemctl restart cloudflared
+```
 
 ---
 
