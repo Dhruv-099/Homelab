@@ -28,6 +28,9 @@ It documents the architecture, services, and infrastructure used in the environm
 | Passwords | Vaultwarden | `vaultwarden/` | secrets and password management |
 | Reverse proxy | Nginx Proxy Manager | `proxymanager/` | host routing, SSL termination |
 | Container UI | Portainer | `portainer/` | container management UI |
+| Monitoring | Beszel | `beszel/` | system & container health metrics |
+| Updates | Watchtower | `watchtower/` | automated container image updates |
+| Alerting | Notifier | `notifier/` | Telegram alerts for container/disk health and update reports |
 
 ---
 
@@ -38,7 +41,7 @@ This repository is organized as a modular homelab stack. Each service has its ow
 - Most services share the `homelab` network for internal communication, while external traffic is routed through Nginx Proxy Manager.
 - Host-specific paths, credentials, and runtime configuration are moved into `.env` to keep the repository reusable and private.
 - Sensitive mounts and secrets are documented in `SECURITY.md` rather than embedded inside compose files.
-
+- The notifier polls Beszel's API for health checks and receives webhook calls from Watchtower after update runs; it is not a standalone service like the others.
 ---
 
 ## What this repo includes
@@ -56,8 +59,6 @@ This homelab is intended to run internal services on the LAN. Internal DNS and p
 - AdGuard Home service for DNS rewrites
 
 The reproducible guide covers how to wire these services together.
-
----
 
 ---
 

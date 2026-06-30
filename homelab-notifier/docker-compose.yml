@@ -1,0 +1,25 @@
+services:
+  notifier:
+    image: python:3.11-slim
+    container_name: homelab-notifier
+    restart: unless-stopped
+    working_dir: /
+    command: >
+      sh -c "pip install fastapi uvicorn httpx &&
+             uvicorn main:app --host 0.0.0.0 --port 8000"
+    volumes:
+      - ./main.py:/main.py
+    ports:
+      - "7440:8000"
+    environment:
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
+      - BESZEL_URL=${BESZEL_URL}
+      - BESZEL_EMAIL=${BESZEL_EMAIL}
+      - BESZEL_PASSWORD=${BESZEL_PASSWORD}
+    networks:
+      - homelab
+
+networks:
+  homelab:
+    external: true
