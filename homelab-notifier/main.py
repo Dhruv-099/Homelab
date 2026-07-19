@@ -4,7 +4,7 @@ from fastapi import FastAPI, Request
 # --- Configuration ---
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
-BESZEL_URL = os.getenv("BESZEL_URL", "http://192.168.1.4:8232")
+BESZEL_URL = os.getenv("BESZEL_URL", "http://beszel:8090")
 BESZEL_EMAIL = os.getenv("BESZEL_EMAIL")
 BESZEL_PASSWORD = os.getenv("BESZEL_PASSWORD")
 BESZEL_CHECK_INTERVAL = 21600  # 6 Hours
