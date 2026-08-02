@@ -31,6 +31,16 @@ It documents the architecture, services, and infrastructure used in the environm
 | Monitoring | Beszel | `beszel/` | system & container health metrics |
 | Updates | Watchtower | `watchtower/` | automated container image updates |
 | Alerting | Notifier | `notifier/` | Telegram alerts for container/disk health and update reports |
+| File management | Filebrowser | `filebrowser/` | web-based file browser for host storage |
+| Reading | Kavita | `kavita/` | comic/ebook server |
+| Reading | Openbooks | `openbooks/` | Calibre/IRC ebook search and download |
+| Wiki | Bookstack | `bookstack/` | self-hosted documentation/wiki |
+| Tasks | Vikunja | `vikunja/` | task and to-do management |
+| Offline docs | Kiwix | `Kiwix/` | offline ZIM archive server (docs, wikis) |
+| PDF tools | BentoPDF | `BentoPDF/` | browser-based PDF utilities |
+| Networking | Netbird | `netbird/` | self-hosted WireGuard-based mesh VPN |
+| Networking | WARP | `warp/` | Cloudflare WARP SOCKS5 proxy for outbound traffic |
+| Utilities | OmniTools | `OmniTools/` | browser-based collection of everyday dev/file utilities |
 
 ---
 

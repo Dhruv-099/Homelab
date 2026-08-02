@@ -4,8 +4,8 @@ services:
     image: ghcr.io/hotio/jellyfin:latest
     restart: unless-stopped
     environment:
-      PUID: 1001
-      PGID: 1001
+      PUID: 1000
+      PGID: 1000
       TZ: Asia/Kolkata
     ports:
       - 8096:8096

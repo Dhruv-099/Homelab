@@ -9,6 +9,9 @@ services:
       WATCHTOWER_INCLUDE_STOPPED: false
       WATCHTOWER_SCHEDULE: "0 0 15 * * *"
       DOCKER_API_VERSION: "1.45"
+      WATCHTOWER_NOTIFICATIONS: shoutrrr
+      # Posts update reports to the notifier's webhook. Set in `.env`.
+      WATCHTOWER_NOTIFICATION_URL: ${WATCHTOWER_NOTIFICATION_URL}
     volumes:
       # Allow Watchtower to access the Docker daemon to update containers
       - /var/run/docker.sock:/var/run/docker.sock

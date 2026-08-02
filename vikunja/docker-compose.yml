@@ -1,0 +1,52 @@
+services:
+  vikunja:
+    image: vikunja/vikunja
+    container_name: vikunja
+    environment:
+      # Public URL: set in your local `.env` (do not commit real domains)
+      VIKUNJA_SERVICE_PUBLICURL: ${VIKUNJA_PUBLIC_URL}
+      VIKUNJA_DATABASE_HOST: vikunja-db
+      VIKUNJA_DATABASE_PASSWORD: ${VIKUNJA_DB_PASSWORD}
+      VIKUNJA_DATABASE_TYPE: postgres
+      VIKUNJA_DATABASE_USER: vikunja
+      VIKUNJA_DATABASE_DATABASE: vikunja
+      # Service secret: generate your own, never reuse this repo's value
+      VIKUNJA_SERVICE_SECRET: ${VIKUNJA_SERVICE_SECRET}
+      VIKUNJA_SERVICE_ENABLEREGISTRATION: "false"
+      TZ: Asia/Kolkata
+    ports:
+      - 3456:3456
+    volumes:
+      # Persist Vikunja uploaded files on the host
+      - ./files:/app/vikunja/files
+    depends_on:
+      vikunja-db:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - homelab
+      - vikunja
+
+  vikunja-db:
+    image: postgres:16
+    container_name: vikunja-db
+    environment:
+      POSTGRES_PASSWORD: ${VIKUNJA_DB_PASSWORD}
+      POSTGRES_USER: vikunja
+      POSTGRES_DB: vikunja
+    volumes:
+      # Persist PostgreSQL database files on the host
+      - ./db:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h localhost -U $$POSTGRES_USER"]
+      interval: 2s
+      start_period: 30s
+    networks:
+      - vikunja
+
+networks:
+  homelab:
+    external: true
+  vikunja:
+    name: vikunja_network

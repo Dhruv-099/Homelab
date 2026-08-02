@@ -1,0 +1,34 @@
+services:
+  warp:
+    image: caomingjun/warp
+    container_name: warp
+    restart: unless-stopped
+    device_cgroup_rules:
+      - 'c 10:200 rwm'
+    environment:
+      - WARP_SLEEP=5
+      - TZ=Asia/Kolkata
+      # WARP_ENABLE_NAT intentionally NOT set — keeps proxy-only mode (no full-tunnel),
+      # so only containers that explicitly point at warp:1080 are routed through it.
+    cap_add:
+      - MKNOD
+      - AUDIT_WRITE
+      - NET_ADMIN
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=0
+      - net.ipv4.conf.all.src_valid_mark=1
+    volumes:
+      # Use host timezone information inside the container
+      - /etc/localtime:/etc/localtime:ro
+      # Persist WARP client state on the host
+      - ./data:/var/lib/cloudflare-warp
+    networks:
+      - homelab
+      - arr
+
+networks:
+  homelab:
+    external: true
+  arr:
+    name: arr_network
+    external: true

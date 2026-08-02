@@ -3,6 +3,9 @@ services:
     image: nextcloud:latest
     container_name: nextcloud
     restart: unless-stopped
+    labels:
+      # Auto-run Nextcloud's upgrade routine after Watchtower updates the image
+      - "com.centurylinklabs.watchtower.lifecycle.post-update=su -s /bin/sh www-data -c 'php /var/www/html/occ maintenance:mode --on && php /var/www/html/occ upgrade && php /var/www/html/occ maintenance:mode --off'"
     environment:
       # IMPORTANT: Use `.env` for real secrets. See .env.example and SECURITY.md.
       - POSTGRES_HOST=nextcloud_db

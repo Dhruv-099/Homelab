@@ -92,8 +92,11 @@ docker compose logs -f <service>
 3. `forgejo` — Git hosting
 4. `vaultwarden` — passwords and secrets management
 5. `immich-setup` — photo management
-6. `arr`, `jellyfin`, `navidrome` — media services
+6. `arr`, `jellyfin`, `navidrome`, `kavita`, `openbooks` — media services
 7. `scrutiny` — drive monitoring
+8. `bookstack`, `vikunja` — docs and task management
+9. `netbird` — mesh VPN (requires its own reverse-proxy/DNS setup, see NetBird docs)
+10. `warp`, `Kiwix`, `BentoPDF`, `OmniTools` — optional standalone utilities
 
 ---
 

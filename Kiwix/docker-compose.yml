@@ -1,0 +1,16 @@
+services:
+  kiwix-serve:
+    image: ghcr.io/kiwix/kiwix-serve
+    container_name: kiwix
+    volumes:
+      - ./data:/data
+    ports:
+      - '8091:8080'
+    command: '*.zim'
+    restart: unless-stopped
+    networks:
+      - homelab
+
+networks:
+  homelab:
+    external: true

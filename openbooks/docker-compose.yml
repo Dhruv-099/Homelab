@@ -1,0 +1,21 @@
+services:
+  openbooks:
+    image: evanbuss/openbooks:latest
+    container_name: openbooks
+    restart: unless-stopped
+    ports:
+      - "8094:80"
+    volumes:
+      # Mount shared media library from host storage. Use `${MEDIA_DIR}` in
+      # `.env` to avoid exposing host paths in the repo.
+      - ${MEDIA_DIR}:/data/books
+    # Server name shown to connecting clients: set your own in `.env` if you'd rather not hardcode it
+    command: --name homelab --persist --dir /data
+    environment:
+      - BASE_PATH=/
+    networks:
+      - homelab
+
+networks:
+  homelab:
+    external: true

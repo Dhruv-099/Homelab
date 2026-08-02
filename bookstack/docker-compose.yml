@@ -1,0 +1,53 @@
+services:
+  bookstack:
+    image: lscr.io/linuxserver/bookstack:latest
+    container_name: bookstack
+    environment:
+      - PUID=1001
+      - PGID=1001
+      - TZ=Asia/Kolkata
+      # Public URL: set in your local `.env` (do not commit real domains)
+      - APP_URL=${BOOKSTACK_APP_URL}
+      - DB_HOST=bookstack_db
+      - DB_PORT=3306
+      - DB_USER=bookstack
+      - DB_PASS=${BOOKSTACK_DB_PASSWORD}
+      - DB_DATABASE=bookstackapp
+      # App encryption key: generate your own, never reuse this repo's value
+      - APP_KEY=${BOOKSTACK_APP_KEY}
+      - APP_DEBUG=false
+    volumes:
+      # Persist Bookstack application settings and uploads on the host
+      - ./bookstack_app_data:/config
+    ports:
+      - 6875:80
+    restart: unless-stopped
+    depends_on:
+      - bookstack_db
+    networks:
+      - homelab
+      - bookstack
+
+  bookstack_db:
+    image: lscr.io/linuxserver/mariadb:latest
+    container_name: bookstack_db
+    environment:
+      - PUID=1001
+      - PGID=1001
+      - TZ=Asia/Kolkata
+      - MYSQL_ROOT_PASSWORD=${BOOKSTACK_DB_PASSWORD}
+      - MYSQL_DATABASE=bookstackapp
+      - MYSQL_USER=bookstack
+      - MYSQL_PASSWORD=${BOOKSTACK_DB_PASSWORD}
+    volumes:
+      # Persist MariaDB data files on the host
+      - ./bookstack_db_data:/config
+    restart: unless-stopped
+    networks:
+      - bookstack
+
+networks:
+  homelab:
+    external: true
+  bookstack:
+    name: bookstack_network

@@ -1,0 +1,13 @@
+services:
+  omni-tools:
+    image: iib0011/omni-tools:latest
+    container_name: omni-tools
+    ports:
+      - "8093:80"
+    restart: unless-stopped
+    networks:
+      - homelab
+
+networks:
+  homelab:
+    external: true

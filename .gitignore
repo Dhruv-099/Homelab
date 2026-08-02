@@ -15,6 +15,14 @@
 **/upload/
 **/thumbs/
 **/encoded-video/
+**/bookstack_app_data/
+**/bookstack_db_data/
+vikunja/db/
+vikunja/files/
+netbird/
+
+### --- Backups / Archives ---
+*.zip
 
 ### --- OS & IDE Files ---
 .DS_Store
