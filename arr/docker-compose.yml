@@ -3,8 +3,8 @@ x-common-keys: &common-keys
   logging:
     driver: json-file
   environment:
-    PUID: 1001
-    PGID: 1001
+    PUID: ${PUID:-1000}
+    PGID: ${PGID:-1000}
     TZ: Asia/Kolkata
   dns:
     - 1.1.1.1
@@ -95,10 +95,9 @@ services:
       - 6881:6881
       - 6881:6881/udp
     environment:
-      PUID: 1001
-      PGID: 1001
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
       TZ: Asia/Kolkata
-      WEBUI_PORT: 8090
       TORRENTING_PORT: 6881
     dns:
       - 1.1.1.1

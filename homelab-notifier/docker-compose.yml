@@ -1,14 +1,10 @@
 services:
   notifier:
-    image: python:3.11-slim
+    # Built locally (deps baked in); rebuild after changes with `docker compose up -d --build`
+    build: .
+    image: homelab-notifier:local
     container_name: homelab-notifier
     restart: unless-stopped
-    working_dir: /
-    command: >
-      sh -c "pip install fastapi uvicorn httpx &&
-             uvicorn main:app --host 0.0.0.0 --port 8000"
-    volumes:
-      - ./main.py:/main.py
     ports:
       - "7440:8000"
     environment:
@@ -17,6 +13,12 @@ services:
       - BESZEL_URL=${BESZEL_URL}
       - BESZEL_EMAIL=${BESZEL_EMAIL}
       - BESZEL_PASSWORD=${BESZEL_PASSWORD}
+      # Send an "all good" summary after every 6-hourly check (set false for alerts only)
+      - SEND_OK_SUMMARY=${SEND_OK_SUMMARY:-true}
+      - ROOT_DISK_LABEL=${ROOT_DISK_LABEL:-Root}
+    labels:
+      # Locally built image — nothing for Watchtower to pull
+      - "com.centurylinklabs.watchtower.enable=false"
     networks:
       - homelab
 

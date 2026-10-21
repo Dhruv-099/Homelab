@@ -50,6 +50,26 @@ Edit `.env` and provide values for:
 
 > Do not commit `.env` to version control. It is ignored by `.gitignore`.
 
+### Link `.env` into each stack
+
+Docker Compose only reads `.env` from the folder it runs in, so a single root `.env` is not picked up by `cd nextcloud && docker compose up -d`. Symlink it into every stack folder:
+
+```bash
+./scripts/link-env.sh
+```
+
+Re-run it after adding a new service folder. The symlinks are gitignored.
+
+---
+
+## Create the shared network
+
+Every stack joins an external `homelab` Docker network. Create it once before starting anything:
+
+```bash
+docker network create homelab
+```
+
 ---
 
 ## Launching services
@@ -71,10 +91,10 @@ Use the same pattern for other services:
 ### Option B: Launch multiple stacks together
 
 ```bash
-docker compose -f nextcloud/docker-compose.yml -f forgejo/docker-compose.yml up -d
+for d in nextcloud forgejo; do (cd "$d" && docker compose up -d); done
 ```
 
-This is useful when services are separated by directories but you want to start them from the repo root.
+Run each stack from its own folder. Avoid merging several files with `docker compose -f a.yml -f b.yml`: that creates one combined project and resolves every relative path (`./data`, `./config`) against the first file's folder.
 
 ### Check service health
 
@@ -88,15 +108,27 @@ docker compose logs -f <service>
 ## Recommended deployment order
 
 1. `proxymanager` — Nginx Proxy Manager for routing
-2. `nextcloud` — storage and collaboration
-3. `forgejo` — Git hosting
-4. `vaultwarden` — passwords and secrets management
-5. `immich-setup` — photo management
-6. `arr`, `jellyfin`, `navidrome`, `kavita`, `openbooks` — media services
-7. `scrutiny` — drive monitoring
-8. `bookstack`, `vikunja` — docs and task management
-9. `netbird` — mesh VPN (requires its own reverse-proxy/DNS setup, see NetBird docs)
-10. `warp`, `Kiwix`, `BentoPDF`, `OmniTools` — optional standalone utilities
+2. `portainer` — container management UI (see the first-run note below)
+3. `vaultwarden` — passwords and secrets management
+4. `nextcloud` — storage and collaboration
+5. `forgejo` — Git hosting
+6. `immich-setup` — photo management
+7. `arr` — *arr suite, qBittorrent, Jellyseerr, FlareSolverr (creates `arr_network`)
+8. `warp` — Cloudflare WARP proxy; must come after `arr` because it joins `arr_network`
+9. `jellyfin`, `navidrome`, `kavita`, `openbooks` — media services
+10. `beszel` — system and container metrics
+11. `homelab-notifier` — Telegram alerts; build with `docker compose up -d --build`
+12. `watchtower` — after the notifier, since it posts update reports to it
+13. `scrutiny` — drive monitoring
+14. `vikunja`, `trillium`, `filebrowser` — tasks, notes, file management
+    - `bookstack` is optional and not deployed in the live homelab (Trilium covers notes/docs). Deploy it the same way if you want a wiki.
+15. `Kiwix`, `BentoPDF`, `OmniTools` — optional standalone utilities
+16. Netbird — mesh VPN, deployed separately (not tracked in this repo; see NetBird docs)
+
+### Portainer first run
+
+- The UI is HTTPS-only: open `https://<host>:9443` and accept the self-signed certificate.
+- Create the admin user within about 5 minutes of the first start. Otherwise Portainer locks setup for security and shows a timeout page; fix it with `docker restart portainer` and try again.
 
 ---
 
@@ -132,53 +164,46 @@ Make sure your LAN clients use AdGuard Home as their DNS resolver.
 
 ## Cloudflare / public access
 
-Use Cloudflare DNS, Nginx Proxy Manager, and Cloudflare Tunnel to expose services securely.
+Public traffic flows **Cloudflare → Cloudflare Tunnel → Nginx Proxy Manager (port 80) → container**. Cloudflare terminates TLS at its edge, so the NPM proxy hosts use plain HTTP and need no certificates.
 
-### Step 1: Add a DNS record in Cloudflare
-
-1. Open the Cloudflare dashboard and go to **DNS** → **Add record**.
-2. Set:
-   - Type: `CNAME`
-   - Name: `<subdomain>`
-   - Target / Content: `<cloudflared-tunnel-hostname>`
-   - Proxy: `ON` (orange cloud)
-
-### Step 2: Add a Proxy Host in Nginx Proxy Manager
+### Step 1: Add a Proxy Host in Nginx Proxy Manager
 
 1. Open NPM and go to **Proxy Hosts** → **Add Proxy Host**.
 2. Configure:
    - Domain Names: `<subdomain.your-domain.com>`
    - Scheme: `http`
-   - Forward Hostname: `<container_or_host_ip>`
-   - Forward Port: `<service_port>`
-   - Websockets: `ON` if the service requires them
-3. In the SSL tab:
-   - Request a new SSL certificate
-   - Choose DNS Challenge
-   - Use your Cloudflare API token
-   - Enable **Force SSL**
-4. Save the proxy host.
+   - Forward Hostname: the **container name** (NPM shares the `homelab` network), e.g. `jellyfin`
+   - Forward Port: the **container's internal port**, not the host port (e.g. Kavita is `5000`, not `5001`)
+   - Websockets: `ON`, Block Common Exploits: `ON`
+3. Leave the SSL tab empty and save.
 
-### Step 3: Update Cloudflare Tunnel configuration
+### Step 2: Publish the hostname on the tunnel
 
-Edit `/etc/cloudflared/config.yml` and add the new hostname before the catch-all rule under `ingress:`.
+**Dashboard-managed tunnel** (the tunnel's config lives in Cloudflare; this is what the live homelab uses):
+
+1. Open Cloudflare **Zero Trust** → **Networks** → **Tunnels** → your tunnel → **Public Hostname** → **Add a public hostname**.
+2. Set the subdomain and domain, Type `HTTP`, URL `localhost:80`.
+3. Save. Cloudflare creates the DNS record automatically.
+
+In this mode `/etc/cloudflared/config.yml` ingress rules are **ignored**; only the dashboard list counts, and any other hostname gets a Cloudflare 404. `cloudflared tunnel route dns` creates the DNS record but not the public hostname, so it is not enough on its own.
+
+**Locally-managed tunnel** (alternative): add the hostname to `/etc/cloudflared/config.yml` before the catch-all, route DNS, and restart:
 
 ```yaml
 ingress:
   - hostname: <subdomain.your-domain.com>
-    service: http://localhost:<service_port>
-    originRequest:
-      noTLSVerify: true
-    httpHostHeader: <subdomain.your-domain.com>
-
+    service: http://localhost:80
   - service: http_status:404
 ```
 
-Then restart Cloudflared:
-
 ```bash
+cloudflared tunnel route dns <tunnel-name> <subdomain.your-domain.com>
 sudo systemctl restart cloudflared
 ```
+
+### What to expose
+
+Expose user-facing apps only. Keep admin tools (Portainer, the *arr apps, qBittorrent, Filebrowser, Scrutiny, Beszel, the NPM admin UI) LAN-only and reach them remotely through the VPN (Netbird).
 
 ---
 
@@ -192,6 +217,9 @@ sudo systemctl restart cloudflared
 
 ## Notes
 
-- Paths such as `${MEDIA_DIR}` and `${NEXTCLOUD_DATA_DIR}` are configurable in `.env`.
+- Paths such as `${MEDIA_DIR}`, `${NEXTCLOUD_DATA_DIR}` and `${KAVITA_BOOKS_DIR}` are configurable in `.env`.
 - The repo is structured so each service can be deployed independently.
 - If you want a smaller subset, deploy only the folders you need.
+- **Root-owned folders:** Docker creates missing bind-mount folders as `root`. Images that run as a non-root user (e.g. Jellyseerr, Vikunja) then crash with `EACCES`/`permission denied`. Fix it once with
+  `docker run --rm -v <host-folder>:/c alpine chown 1000:1000 /c` (use your `PUID:PGID`) and restart the container.
+- **Beszel agent:** add the host in Beszel (**Add System**, port `45876`), copy the public key and token into `BESZEL_AGENT_KEY` / `BESZEL_AGENT_TOKEN`, then `cd beszel && docker compose up -d`. Extra data drives are configured with the `*_DRIVE_*` variables.

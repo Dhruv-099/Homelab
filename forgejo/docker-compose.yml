@@ -13,6 +13,19 @@ services:
       # don't expose admin credentials here; use `.env` for sensitive values.
       - USER_UID=1001
       - USER_GID=1001
+      # Point Forgejo at the bundled Postgres so the install wizard is pre-filled
+      - FORGEJO__database__DB_TYPE=postgres
+      - FORGEJO__database__HOST=db:5432
+      - FORGEJO__database__NAME=forgejo
+      - FORGEJO__database__USER=forgejo
+      - FORGEJO__database__PASSWD=${FORGEJO_DB_PASSWORD}
+      - FORGEJO__database__SSL_MODE=disable
+      # Public URL: set in your local `.env` (do not commit real domains)
+      - FORGEJO__server__ROOT_URL=${FORGEJO_ROOT_URL}
+      # SSH: container port 22 is published on host port 222 (see ports below)
+      - FORGEJO__server__SSH_PORT=222
+      - FORGEJO__server__SSH_LISTEN_PORT=22
+      - FORGEJO__service__DEFAULT_KEEP_EMAIL_PRIVATE=true
     restart: always
     networks:
       - homelab
@@ -28,6 +41,7 @@ services:
       - '222:22'
   db:
     image: postgres:15-alpine
+    container_name: forgejo_db
     restart: always
     environment:
       # Database credentials: DO NOT commit plaintext passwords. Use an

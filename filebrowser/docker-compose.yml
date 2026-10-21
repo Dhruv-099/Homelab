@@ -3,13 +3,17 @@ services:
     image: filebrowser/filebrowser:latest
     container_name: filebrowser
     restart: unless-stopped
-    user: "1001:1001"
+    user: "${PUID:-1000}:${PGID:-1000}"
     environment:
       TZ: Asia/Kolkata
     volumes:
+      # Intentionally exposes the whole host filesystem. Keep this LAN/VPN-only
+      # behind a strong admin password — see SECURITY.md.
       - /:/srv/root
-      - ./filebrowser.db:/database/filebrowser.db
-      - ./settings.json:/config/settings.json
+      # Persist Filebrowser's database and settings on the host. Directories
+      # (not single files) so Docker doesn't create them as empty folders.
+      - ./database:/database
+      - ./config:/config
     ports:
       - 8086:80
     networks:

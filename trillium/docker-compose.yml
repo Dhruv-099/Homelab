@@ -15,4 +15,4 @@ services:
 
 networks:
   homelab:
-    external: tru
+    external: true

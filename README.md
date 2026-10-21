@@ -22,23 +22,25 @@ It documents the architecture, services, and infrastructure used in the environm
 | File sync | Nextcloud | `nextcloud/` | file sharing, calendar, contacts |
 | Media | Jellyfin | `jellyfin/` | media streaming |
 | Media management | Radarr/Sonarr/Lidarr/Bazarr/Prowlarr | `arr/` | automated media downloads and organization |
+| Downloads & requests | qBittorrent/Jellyseerr/FlareSolverr | `arr/` | torrent client, media requests, Cloudflare challenge solver |
 | Music | Navidrome | `navidrome/` | personal music streaming |
 | Photos | Immich | `immich-setup/` | photo backup and management |
 | Monitoring | Scrutiny | `scrutiny/` | drive health and SMART monitoring |
 | Passwords | Vaultwarden | `vaultwarden/` | secrets and password management |
 | Reverse proxy | Nginx Proxy Manager | `proxymanager/` | host routing, SSL termination |
 | Container UI | Portainer | `portainer/` | container management UI |
-| Monitoring | Beszel | `beszel/` | system & container health metrics |
+| Monitoring | Beszel | `beszel/` | system & container health metrics (hub + host agent, incl. data drives) |
 | Updates | Watchtower | `watchtower/` | automated container image updates |
-| Alerting | Notifier | `notifier/` | Telegram alerts for container/disk health and update reports |
+| Alerting | Notifier | `homelab-notifier/` | Telegram alerts for container/disk health and update reports |
 | File management | Filebrowser | `filebrowser/` | web-based file browser for host storage |
 | Reading | Kavita | `kavita/` | comic/ebook server |
 | Reading | Openbooks | `openbooks/` | Calibre/IRC ebook search and download |
-| Wiki | Bookstack | `bookstack/` | self-hosted documentation/wiki |
+| Wiki *(optional, not deployed)* | Bookstack | `bookstack/` | self-hosted documentation/wiki — replaced by Trilium |
+| Notes | Trilium | `trillium/` | hierarchical personal notes |
 | Tasks | Vikunja | `vikunja/` | task and to-do management |
 | Offline docs | Kiwix | `Kiwix/` | offline ZIM archive server (docs, wikis) |
 | PDF tools | BentoPDF | `BentoPDF/` | browser-based PDF utilities |
-| Networking | Netbird | `netbird/` | self-hosted WireGuard-based mesh VPN |
+| Networking | Netbird | — (deployed separately, not tracked) | self-hosted WireGuard-based mesh VPN |
 | Networking | WARP | `warp/` | Cloudflare WARP SOCKS5 proxy for outbound traffic |
 | Utilities | OmniTools | `OmniTools/` | browser-based collection of everyday dev/file utilities |
 

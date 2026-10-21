@@ -11,6 +11,28 @@ services:
     networks:
       - homelab
 
+  beszel-agent:
+    container_name: beszel-agent
+    image: henrygd/beszel-agent:latest
+    restart: unless-stopped
+    # Host networking so the agent reports real host network stats
+    network_mode: host
+    volumes:
+      # Read-only Docker socket for per-container metrics
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Persist agent identity across restarts
+      - ./agent_data:/var/lib/beszel-agent
+      # Extra data drives to monitor (read-only). Folder name = <device>__<label>.
+      # Host paths/devices are host-specific; set in `.env`.
+      - ${MEDIA_DRIVE_MOUNT:-/mnt/media}:/extra-filesystems/${MEDIA_DRIVE_DEVICE:-sdc1}__${MEDIA_DRIVE_LABEL:-Media}:ro
+      - ${STORAGE_DRIVE_MOUNT:-/mnt/storage}:/extra-filesystems/${STORAGE_DRIVE_DEVICE:-sdb1}__${STORAGE_DRIVE_LABEL:-Storage}:ro
+    environment:
+      LISTEN: 45876
+      # Hub public key and registration token: from Beszel → Add System. Set in `.env`.
+      KEY: ${BESZEL_AGENT_KEY}
+      TOKEN: ${BESZEL_AGENT_TOKEN}
+      HUB_URL: http://localhost:8232
+
 networks:
   homelab:
     external: true

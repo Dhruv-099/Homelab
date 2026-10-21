@@ -16,10 +16,15 @@ cp .env.example .env
 # Edit .env and add real values
 ```
 
-2. Start the stack with docker-compose:
+2. Link it into each stack and start the services you need — see `REPRODUCIBLE.md`:
 
 ```bash
-docker compose up -d
+./scripts/link-env.sh
+cd <service> && docker compose up -d
 ```
 
-If you want me to further redact or generalize additional files, tell me which ones to prioritize.
+## Known high-privilege mounts
+
+- **Filebrowser** mounts the entire host filesystem (`/`) on purpose, for host-wide file management. Anyone who logs into it can read and modify the host. Keep it LAN/VPN-only (never expose it through Cloudflare Tunnel), set a strong admin password on first login, and disable self-signup.
+- **Portainer** and **Watchtower** mount `/var/run/docker.sock`, which is effectively root on the host.
+- **Scrutiny** runs privileged with `/dev` mounted for S.M.A.R.T. access.

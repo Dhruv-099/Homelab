@@ -20,6 +20,13 @@
 vikunja/db/
 vikunja/files/
 netbird/
+filebrowser/database/
+filebrowser/config/
+kavita/config/
+scrutiny/config/
+scrutiny/influxdb/
+forgejo/forgejo/
+Kiwix/data/
 
 ### --- Backups / Archives ---
 *.zip
@@ -37,3 +44,4 @@ __pycache__/
 venv/
 .venv/
 .ipynb_checkpoints/
+beszel/agent_data/
