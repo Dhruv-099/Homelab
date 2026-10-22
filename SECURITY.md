@@ -25,6 +25,6 @@ cd <service> && docker compose up -d
 
 ## Known high-privilege mounts
 
-- **Filebrowser** mounts the entire host filesystem (`/`) on purpose, for host-wide file management. Anyone who logs into it can read and modify the host. Keep it LAN/VPN-only (never expose it through Cloudflare Tunnel), set a strong admin password on first login, and disable self-signup.
+- **Filebrowser** (FileBrowser Quantum) mounts the two data drives read-write, not the whole host, so a compromised login can't reach `~/.ssh` or the stack `.env` files. Keep it LAN/VPN-only (never expose it through Cloudflare Tunnel) and change the generated admin password at first login. The original File Browser project was archived on 2026-09-01 and gets no security fixes; don't switch back to the `filebrowser/filebrowser` image.
 - **Portainer** and **Watchtower** mount `/var/run/docker.sock`, which is effectively root on the host.
 - **Scrutiny** runs privileged with `/dev` mounted for S.M.A.R.T. access.

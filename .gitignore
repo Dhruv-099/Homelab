@@ -20,8 +20,11 @@
 vikunja/db/
 vikunja/files/
 netbird/
-filebrowser/database/
-filebrowser/config/
+filebrowser/data/
+nextcloud/config/
+nextcloud/custom_apps/
+nextcloud/themes/
+nextcloud/db/
 kavita/config/
 scrutiny/config/
 scrutiny/influxdb/

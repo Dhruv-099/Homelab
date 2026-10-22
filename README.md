@@ -32,7 +32,7 @@ It documents the architecture, services, and infrastructure used in the environm
 | Monitoring | Beszel | `beszel/` | system & container health metrics (hub + host agent, incl. data drives) |
 | Updates | Watchtower | `watchtower/` | automated container image updates |
 | Alerting | Notifier | `homelab-notifier/` | Telegram alerts for container/disk health and update reports |
-| File management | Filebrowser | `filebrowser/` | web-based file browser for host storage |
+| File management | FileBrowser Quantum | `filebrowser/` | web-based file browser for the data drives |
 | Reading | Kavita | `kavita/` | comic/ebook server |
 | Reading | Openbooks | `openbooks/` | Calibre/IRC ebook search and download |
 | Wiki *(optional, not deployed)* | Bookstack | `bookstack/` | self-hosted documentation/wiki — replaced by Trilium |

@@ -1,0 +1,16 @@
+# FileBrowser Quantum config: https://filebrowserquantum.com/en/docs/getting-started/config/
+server:
+  cacheDir: /home/filebrowser/data/tmp
+  sources:
+    - path: /srv/media
+      name: Media
+      config:
+        defaultEnabled: true
+    - path: /srv/storage
+      name: Storage
+      config:
+        defaultEnabled: true
+auth:
+  # The admin password is left unset on purpose: a random one is generated
+  # and printed to the logs once, and must be changed at first login
+  adminUsername: admin

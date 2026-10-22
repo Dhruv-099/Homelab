@@ -1,19 +1,30 @@
 services:
   filebrowser:
-    image: filebrowser/filebrowser:latest
+    # FileBrowser Quantum: maintained fork of the original File Browser,
+    # which was archived on 2026-09-01 (no more security fixes)
+    image: gtstef/filebrowser:stable
     container_name: filebrowser
     restart: unless-stopped
     user: "${PUID:-1000}:${PGID:-1000}"
     environment:
       TZ: Asia/Kolkata
     volumes:
-      # Intentionally exposes the whole host filesystem. Keep this LAN/VPN-only
-      # behind a strong admin password — see SECURITY.md.
-      - /:/srv/root
-      # Persist Filebrowser's database and settings on the host. Directories
-      # (not single files) so Docker doesn't create them as empty folders.
-      - ./database:/database
-      - ./config:/config
+      # Data drives only, not the whole host, so a compromised login can't
+      # reach ~/.ssh or the stack .env files. See SECURITY.md.
+      - type: bind
+        source: ${MEDIA_DRIVE_MOUNT:-/mnt/media}
+        target: /srv/media
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${STORAGE_DRIVE_MOUNT:-/mnt/storage}
+        target: /srv/storage
+        bind:
+          create_host_path: false
+      # Database, cache and generated state
+      - ./data:/home/filebrowser/data
+      # Tracked config, mounted over the default config path
+      - ./config.yaml:/home/filebrowser/data/config.yaml:ro
     ports:
       - 8086:80
     networks:

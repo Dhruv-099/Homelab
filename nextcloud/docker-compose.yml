@@ -18,6 +18,8 @@ services:
       - NEXTCLOUD_TRUSTED_DOMAINS=${NEXTCLOUD_TRUSTED_DOMAIN}
       - OVERWRITEPROTOCOL=https
       - OVERWRITECLIURL=https://${NEXTCLOUD_TRUSTED_DOMAIN}
+      # Reverse proxy (NPM) sits on the Docker network; trust it for client IP/HTTPS headers
+      - TRUSTED_PROXIES=172.16.0.0/12
     volumes:
       - ./config:/var/www/html/config
       - ./custom_apps:/var/www/html/custom_apps
@@ -26,13 +28,31 @@ services:
       # using a generic path (e.g. `/srv/nextcloud`) or document and exclude
       # from public repos if it contains sensitive data.
       # Persistent Nextcloud data. Use an env var to avoid exposing host layout.
-      - ${NEXTCLOUD_DATA_DIR}:/var/www/html/data
+      - type: bind
+        source: ${NEXTCLOUD_DATA_DIR}
+        target: /var/www/html/data
+        bind:
+          create_host_path: false
     ports:
       - 8088:80
     depends_on:
       - nextcloud_db
     networks:
       - homelab
+      - nextcloud
+
+  nextcloud_cron:
+    # Runs Nextcloud background jobs every 5 minutes (shares volumes with the app)
+    image: nextcloud:latest
+    container_name: nextcloud_cron
+    restart: unless-stopped
+    entrypoint: /cron.sh
+    # Same code, config and data volumes as the app container
+    volumes_from:
+      - nextcloud
+    depends_on:
+      - nextcloud
+    networks:
       - nextcloud
 
   nextcloud_db:
