@@ -24,8 +24,18 @@ services:
       - ./agent_data:/var/lib/beszel-agent
       # Extra data drives to monitor (read-only). Folder name = <device>__<label>.
       # Host paths/devices are host-specific; set in `.env`.
-      - ${MEDIA_DRIVE_MOUNT:-/mnt/media}:/extra-filesystems/${MEDIA_DRIVE_DEVICE:-sdc1}__${MEDIA_DRIVE_LABEL:-Media}:ro
-      - ${STORAGE_DRIVE_MOUNT:-/mnt/storage}:/extra-filesystems/${STORAGE_DRIVE_DEVICE:-sdb1}__${STORAGE_DRIVE_LABEL:-Storage}:ro
+      - type: bind
+        source: ${MEDIA_DRIVE_MOUNT:-/mnt/media}
+        target: /extra-filesystems/${MEDIA_DRIVE_DEVICE:-sdc1}__${MEDIA_DRIVE_LABEL:-Media}
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${STORAGE_DRIVE_MOUNT:-/mnt/storage}
+        target: /extra-filesystems/${STORAGE_DRIVE_DEVICE:-sdb1}__${STORAGE_DRIVE_LABEL:-Storage}
+        read_only: true
+        bind:
+          create_host_path: false
     environment:
       LISTEN: 45876
       # Hub public key and registration token: from Beszel → Add System. Set in `.env`.

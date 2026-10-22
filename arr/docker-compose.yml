@@ -27,7 +27,11 @@ services:
       - ~/arr/config/radarr:/config
       # Mount shared media library from host storage. Use `${MEDIA_DIR}` in
       # `.env` to avoid exposing host paths in the repo.
-      - ${MEDIA_DIR}:/data
+      - type: bind
+        source: ${MEDIA_DIR}
+        target: /data
+        bind:
+          create_host_path: false
 
   sonarr:
     <<: *common-keys
@@ -42,7 +46,11 @@ services:
       - ~/arr/config/sonarr:/config
       # Mount shared media library from host storage. Use `${MEDIA_DIR}` in
       # `.env` to avoid exposing host paths in the repo.
-      - ${MEDIA_DIR}:/data
+      - type: bind
+        source: ${MEDIA_DIR}
+        target: /data
+        bind:
+          create_host_path: false
 
   lidarr:
     <<: *common-keys
@@ -57,7 +65,11 @@ services:
       - ~/arr/config/lidarr:/config
       # Mount shared media library from host storage. Use `${MEDIA_DIR}` in
       # `.env` to avoid exposing host paths in the repo.
-      - ${MEDIA_DIR}:/data
+      - type: bind
+        source: ${MEDIA_DIR}
+        target: /data
+        bind:
+          create_host_path: false
 
   bazarr:
     <<: *common-keys
@@ -72,7 +84,11 @@ services:
       - ~/arr/config/bazarr:/config
       # Mount shared media library from host storage. Use `${MEDIA_DIR}` in
       # `.env` to avoid exposing host paths in the repo.
-      - ${MEDIA_DIR}:/data
+      - type: bind
+        source: ${MEDIA_DIR}
+        target: /data
+        bind:
+          create_host_path: false
 
   prowlarr:
     <<: *common-keys
@@ -109,7 +125,11 @@ services:
       - ~/arr/config/qbittorrent:/config
       # Mount shared media library from host storage. Use `${MEDIA_DIR}` in
       # `.env` to avoid exposing host paths in the repo.
-      - ${MEDIA_DIR}:/data
+      - type: bind
+        source: ${MEDIA_DIR}
+        target: /data
+        bind:
+          create_host_path: false
     networks:
       - homelab
       - arr

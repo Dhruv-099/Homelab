@@ -13,7 +13,12 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - ~/jellyfin/config:/config
       # Storage for media files (read-only). Use `${MEDIA_DIR}` in `.env`.
-      - ${MEDIA_DIR}:/data:ro
+      - type: bind
+        source: ${MEDIA_DIR}
+        target: /data
+        read_only: true
+        bind:
+          create_host_path: false
     networks:
       - homelab
 

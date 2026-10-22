@@ -7,7 +7,11 @@ services:
       TZ: Asia/Kolkata
     volumes:
       - ./config:/kavita/config
-      - ${KAVITA_BOOKS_DIR}:/books
+      - type: bind
+        source: ${KAVITA_BOOKS_DIR}
+        target: /books
+        bind:
+          create_host_path: false
     ports:
       - 5001:5000
     networks:

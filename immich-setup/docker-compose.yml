@@ -5,7 +5,11 @@ services:
     image: ghcr.io/immich-app/immich-server:${IMMICH_VERSION:-release}
     volumes:
       # Store uploaded media files on the host path configured by UPLOAD_LOCATION
-      - ${UPLOAD_LOCATION}:/data
+      - type: bind
+        source: ${UPLOAD_LOCATION}
+        target: /data
+        bind:
+          create_host_path: false
       # Use host timezone settings inside the container
       - /etc/localtime:/etc/localtime:ro
     env_file:
@@ -54,7 +58,11 @@ services:
       POSTGRES_INITDB_ARGS: '--data-checksums'
     volumes:
       # Persist PostgreSQL database files on the host path configured by DB_DATA_LOCATION
-      - ${DB_DATA_LOCATION}:/var/lib/postgresql/data
+      - type: bind
+        source: ${DB_DATA_LOCATION}
+        target: /var/lib/postgresql/data
+        bind:
+          create_host_path: false
     shm_size: 128mb
     restart: always
     networks:
