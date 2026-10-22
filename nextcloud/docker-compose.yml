@@ -20,13 +20,13 @@ services:
       - OVERWRITECLIURL=https://${NEXTCLOUD_TRUSTED_DOMAIN}
       # Reverse proxy (NPM) sits on the Docker network; trust it for client IP/HTTPS headers
       - TRUSTED_PROXIES=172.16.0.0/12
-    volumes:
+    volumes: &nextcloud-volumes
+      # Nextcloud code. A named volume (not anonymous) so the cron container
+      # can mount it directly and survive Watchtower recreating either one.
+      - html:/var/www/html
       - ./config:/var/www/html/config
       - ./custom_apps:/var/www/html/custom_apps
       - ./themes:/var/www/html/themes
-      # Persistent Nextcloud data. Host path reveals storage layout — consider
-      # using a generic path (e.g. `/srv/nextcloud`) or document and exclude
-      # from public repos if it contains sensitive data.
       # Persistent Nextcloud data. Use an env var to avoid exposing host layout.
       - type: bind
         source: ${NEXTCLOUD_DATA_DIR}
@@ -47,9 +47,10 @@ services:
     container_name: nextcloud_cron
     restart: unless-stopped
     entrypoint: /cron.sh
-    # Same code, config and data volumes as the app container
-    volumes_from:
-      - nextcloud
+    # Same code, config and data volumes as the app container. Not
+    # volumes_from: Watchtower can't recreate a container that references
+    # another container's ID, so it breaks on every Nextcloud update.
+    volumes: *nextcloud-volumes
     depends_on:
       - nextcloud
     networks:
@@ -67,6 +68,10 @@ services:
       - ./db:/var/lib/postgresql/data
     networks:
       - nextcloud
+
+volumes:
+  html:
+    name: nextcloud_html
 
 networks:
   homelab:

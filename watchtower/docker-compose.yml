@@ -1,15 +1,32 @@
 services:
   watchtower:
     container_name: watchtower
-    image: containrrr/watchtower:latest
+    # Maintained fork; containrrr/watchtower was archived in Dec 2025
+    image: nickfedor/watchtower:latest
     restart: unless-stopped
     environment:
       TZ: Asia/Kolkata
       WATCHTOWER_CLEANUP: true
       WATCHTOWER_INCLUDE_STOPPED: false
       WATCHTOWER_SCHEDULE: "0 0 15 * * *"
-      DOCKER_API_VERSION: "1.45"
       WATCHTOWER_NOTIFICATIONS: shoutrrr
+      # Send a report after every run, even when nothing was updated, listing
+      # only the containers that were updated or failed
+      WATCHTOWER_NOTIFICATION_REPORT: "true"
+      WATCHTOWER_NOTIFICATION_TEMPLATE: |
+        {{- if .Report -}}
+        {{- with .Report -}}
+        {{len .Scanned}} scanned, {{len .Updated}} updated, {{len .Failed}} failed
+        {{- range .Updated}}
+        - {{.Name}} ({{.ImageName}})
+        {{- end}}
+        {{- range .Failed}}
+        - FAILED {{.Name}}: {{.Error}}
+        {{- end}}
+        {{- end -}}
+        {{- else -}}
+        {{range .Entries -}}{{.Message}}{{"\n"}}{{- end -}}
+        {{- end -}}
       # Posts update reports to the notifier's webhook. Set in `.env`.
       WATCHTOWER_NOTIFICATION_URL: ${WATCHTOWER_NOTIFICATION_URL}
     volumes:
