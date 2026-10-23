@@ -1,0 +1,4 @@
+# Append to /etc/fstab. Replace UUIDs (find them with `lsblk -f`).
+# nofail + short device timeout: the host still boots if a data drive is missing.
+UUID=<ext4-uuid>  /mnt/storage-931gb  ext4     defaults,nofail,x-systemd.device-timeout=10s                              0 2
+UUID=<ntfs-uuid>  /mnt/sdb1           ntfs-3g  uid=1000,gid=1000,umask=022,nofail,x-systemd.device-timeout=10s           0 0

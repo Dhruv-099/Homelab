@@ -1,0 +1,12 @@
+[Unit]
+Description=Restrict Docker published ports to LAN and VPN
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash -c 'iptables -F DOCKER-USER; iptables -A DOCKER-USER -m conntrack --ctstate RELATED,ESTABLISHED -j RETURN; iptables -A DOCKER-USER -i br+ -j RETURN; iptables -A DOCKER-USER -i docker0 -j RETURN; iptables -A DOCKER-USER -s 192.168.1.0/24 -j RETURN; iptables -A DOCKER-USER -s 100.95.0.0/16 -j RETURN; iptables -A DOCKER-USER -i ens18 -j DROP; iptables -A DOCKER-USER -j RETURN'
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

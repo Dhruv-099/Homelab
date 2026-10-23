@@ -1,0 +1,5 @@
+Types: deb
+URIs: https://pkg.cloudflare.com/cloudflared
+Suites: any
+Components: main
+Signed-By: /usr/share/keyrings/cloudflare-main.gpg

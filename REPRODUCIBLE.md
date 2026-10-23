@@ -8,7 +8,7 @@ This document shows how to reproduce the homelab stack from this repository on a
 
 ## Prerequisites
 
-- A Linux host with Docker and Docker Compose v2 installed.
+- A Linux host with Docker and Docker Compose v2 installed (see [Host setup](#host-setup) for the non-Docker pieces).
 - Git access to this repository.
 - A local `.env` file created from `.env.example`.
 - Optional but recommended: Portainer for visual management.
@@ -129,6 +129,54 @@ docker compose logs -f <service>
 
 - The UI is HTTPS-only: open `https://<host>:9443` and accept the self-signed certificate.
 - Create the admin user within about 5 minutes of the first start. Otherwise Portainer locks setup for security and shows a timeout page; fix it with `docker restart portainer` and try again.
+
+---
+
+## Host setup
+
+Everything below lives on the host, outside Docker, so the compose files alone do not recreate it. Reference copies are in [`host/`](host/). Written for Ubuntu Server 26.04 LTS (upgraded in place from 24.04) with a normal user at uid/gid 1000.
+
+### Packages
+
+- Docker Engine from Docker's apt repo (`docker-ce`, `docker-compose-plugin`), plus `ntfs-3g`, `ufw`, `cloudflared`, `netbird` and `nodejs` (used by the check script).
+- Third-party repos are deb822 files in [`host/apt/`](host/apt/). Copy them to `/etc/apt/sources.list.d/` and install each signing key at the `Signed-By` path inside the file.
+- `do-release-upgrade` renames third-party `.list` files to `*.list.disabled` and does not migrate them. After a release upgrade, re-add the `.sources` files and run `apt update`, or these packages silently stop updating.
+
+### Data drives
+
+[`host/fstab.example`](host/fstab.example) mounts the ext4 data drive at `/mnt/storage-931gb` and the NTFS media drive at `/mnt/sdb1` (ntfs-3g, `uid=1000`, so only uid 1000 can write). Both use `nofail`, so a missing drive does not block boot; the compose files refuse to start containers when a data drive is not mounted.
+
+### Firewall
+
+Two layers, because Docker-published ports bypass ufw's `INPUT` rules:
+
+1. **ufw** (default deny incoming) allows only SSH (22), DNS (53/55) and NPM admin (82) from the LAN (`192.168.1.0/24`), the VPN (`100.95.0.0/16`) and Docker networks (`172.16.0.0/12`).
+2. **`homelab-lockdown.service`** ([`host/systemd/`](host/systemd/homelab-lockdown.service)) rewrites `DOCKER-USER` at every boot so published container ports accept only the LAN, the VPN and Docker bridges, and drop everything arriving on the physical NIC (`ens18`; change it if your interface differs).
+
+```bash
+sudo cp host/systemd/homelab-lockdown.service /etc/systemd/system/
+sudo systemctl enable --now homelab-lockdown
+sudo iptables -S DOCKER-USER   # verify: ends with "-i ens18 -j DROP"
+```
+
+Re-check `DOCKER-USER` after any Docker or kernel upgrade.
+
+### Cloudflare Tunnel service
+
+`cloudflared` runs as a systemd service with the tunnel credentials in `/etc/cloudflared/`. A drop-in ([`host/systemd/cloudflared-override.conf`](host/systemd/cloudflared-override.conf), installed as `/etc/systemd/system/cloudflared.service.d/override.conf`) raises the start timeout and starts it after Docker, so NPM is up before the first request arrives. Without the ordering, requests right after boot fail with "connection reset" on port 80.
+
+### NetBird and AdGuard Home
+
+NetBird (mesh VPN, `100.95.0.0/16`) and AdGuard Home (`/opt/AdGuardHome`, its own systemd unit) are installed on the host. AdGuard listens on the NetBird address and the LAN.
+
+### Daily check
+
+[`host/homelab-check.sh`](host/homelab-check.sh) runs from cron without sudo and logs to `~/bin/homelab-check.log`. It checks pending updates, ufw, `homelab-lockdown`, container and tunnel health, and that both data drives are mounted.
+
+```bash
+mkdir -p ~/bin && cp host/homelab-check.sh ~/bin/ && chmod +x ~/bin/homelab-check.sh
+(crontab -l 2>/dev/null; echo '15 8 * * * /home/dhruv/bin/homelab-check.sh >/dev/null 2>&1') | crontab -
+```
 
 ---
 
