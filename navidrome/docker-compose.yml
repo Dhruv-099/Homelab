@@ -8,6 +8,10 @@ services:
       ND_LOGLEVEL: info
       ND_SESSIONTIMEOUT: 24h
       ND_BASEURL: ""
+      # Trust X-Forwarded-For only from the homelab docker network (NPM fronts
+      # this service through Cloudflare tunnel -> NPM), so logs show real
+      # client IPs instead of the proxy's container IP.
+      ND_REVERSEPROXYWHITELIST: 172.18.0.0/16
       TZ: Asia/Kolkata
     volumes:
       # Persist Navidrome database and runtime data on the host

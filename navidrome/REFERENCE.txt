@@ -1,0 +1,253 @@
+NAVIDROME REFERENCE (music server notes)
+=========================================
+Written 2026-10-30 from a working session. Items marked [UNVERIFIED] come from web
+searches or a Reddit thread and were not tested here. No secrets are stored in this file.
+
+
+1. CURRENT STATE
+----------------
+- Navidrome 0.64.2, container "navidrome", web UI on port 4533.
+- Compose file: ~/Homelab/navidrome/docker-compose.yml
+    * ./data  -> /data   (SQLite DB, cache, plugins)  [gitignored: **/data/]
+    * ${NAVIDROME_MUSIC_DIR} -> /music (read-only)
+    * NAVIDROME_MUSIC_DIR=/mnt/sdb1/Media/Music (set in ~/Homelab/.env)
+    * ND_SCANSCHEDULE=1h, plus a file watcher that picks up new folders within seconds.
+- Library: one test album so far (Nine Inch Nails - Ghosts I-IV, 36 tracks, MP3 320).
+- Admin user `Dhruv099` was created on 2026-10-30 (log: `Creating initial user`). No
+  more "no admin users" warnings; playlists now import normally.
+- Navidrome mounts the music folder read-only, so it can never change your files.
+
+
+2. HOW MUSIC GETS INTO THE LIBRARY
+----------------------------------
+  Prowlarr (indexers) -> Lidarr (manager) -> qBittorrent (downloads) -> /data/Music
+  -> same folder Navidrome reads (/mnt/sdb1/Media/Music) -> auto-scan.
+
+- Lidarr: port 8686, root folder /data/Music (900 GB free at the time), connected to
+  qBittorrent. Quality profiles: Any (accepts everything, even very low bitrates),
+  Standard (lossy MP3/AAC/OGG at 192 kbps and up), Lossless (FLAC etc.). Lossless is
+  NOT required - lossy 320 kbps is fine. Metadata profile: Standard.
+- Prowlarr: port 9696. 9 public torrent indexers, but only Knaben and The Pirate Bay
+  are synced to Lidarr (the rest are TV/movie sites). 1337x was removed on 2026-10-30:
+  live probing returned an HTTP 400 on every search (FlareSolverr path broken), so it
+  was disabled in Prowlarr and deleted from Lidarr's synced list - it was NOT re-added
+  by Prowlarr's next automatic sync. Knaben is now the primary music indexer (it is a
+  meta-indexer and already covers much of 1337x's catalog; the 28-seeder NIN release
+  was found through it). Also flagged in the same health check: EZTV, LimeTorrents and
+  Uindex were failing long-term too, but those only effect TV/movie searches.
+- Lidarr naming: "Rename tracks" was OFF (files landed flat in the artist folder).
+  It is now ON, and the 36 existing files were renamed. Layout is now:
+      <Artist>/<Album> (<Year>)/CD NN/<Artist> - <Album> - NN - <Track title>.mp3
+  The doubled number ("01 - 1 Ghosts I") comes from the track titles, not a setting.
+- Test album chosen on purpose: Ghosts I-IV is released by NIN under a Creative Commons
+  licence (free to share).
+- How the test went: search returned 15 releases; 8 had 0 seeders; Lidarr grabbed the
+  320 kbps copy (28 seeders); imported 36 tracks; Navidrome picked them up on its own.
+
+
+3. DECISIONS MADE
+-----------------
+- Bulk "YouTube video -> audio" tools (Downtify, AudioHub, Tubifarry's YouTube
+  indexer): NOT set up.
+- Seerr (container name "jellyseerr") already runs for movies/TV on Jellyfin. It does
+  not handle music. For music, Lidarr (or Aurral on top of it) is the equivalent.
+- Discovery: Navidrome itself has little built-in discovery. The thread consensus
+  (see section 7) is to add ListenBrainz scrobbling plus a discovery layer.
+
+
+3A. THINGS TO SEE AND DISCUSS
+-----------------------------
+- Octo-Fiesta: NOT set up, to be discussed. It is a Subsonic proxy that sits between a
+  music client and Navidrome. When you play something not in the library it fetches the
+  track from Deezer/Qobuz (account token) or SquidWTF, plays it, and saves it. That
+  bypasses those services' terms and copy protection. It is also not a request portal
+  like Jellyseerr.
+- Gluetun without a paid VPN? Open question. Gluetun needs a VPN endpoint to route
+  through, but it also accepts a custom WireGuard or OpenVPN config, so it is not
+  limited to commercial providers. Ideas to look into [UNVERIFIED]:
+    a) a free VPN tier - these usually block P2P and have no port forwarding;
+    b) your own WireGuard server on a VPS (for example the planned OCI Always Free VM) -
+       check the host's acceptable-use terms for P2P first; peers would then see that
+       server's IP;
+    c) a paid plan with port forwarding stays the straightforward option (section 6).
+
+
+4. OPTIONS FOR DISCOVERY / REQUESTS  (recommended order)
+--------------------------------------------------------
+ 1) ListenBrainz scrobbling (built into Navidrome; free account).
+    Spotify "extended listening history" can be requested in Spotify account settings
+    and imported to ListenBrainz (per the thread).
+ 2) Aurral - request/discovery layer on top of Lidarr, closest thing to Jellyseerr for
+    music. [UNVERIFIED beyond project pages] Needs: a Lidarr instance, a free Last.fm
+    API key, and a MusicBrainz contact email. Changes to the main library go through
+    Lidarr's API. Optional "Weekly Flow" playlists use a built-in Soulseek client.
+    One Reddit user reported duplicated albums/artists on first run and some
+    playback hiccups.
+ 3) AudioMuse-AI (NeptuneHub) - sonic similarity, "Instant Mix", similar songs, via a
+    Navidrome plugin. Docs: https://navidrome.org/docs/usage/integration/audiomuse/
+    Still beta. Wants 4 cores with AVX, ~8 GB RAM, SSD. This host has 4 CPUs with AVX2
+    and ~10 GB RAM free, so it fits, but only worth it with a few hundred tracks.
+ 4) Clients: Feishin (desktop/web) and Substreamer (phone) were recommended in the
+    thread [UNVERIFIED]. Both are Subsonic-API clients that work with Navidrome.
+ Also mentioned (not checked): SubWave (AI DJ radio for Navidrome), SoulSync,
+ DroppedNeedle (reported as heavy), Strawberry.
+
+
+5. GLOSSARY: THINGS WE DISCUSSED
+--------------------------------
+Usenet
+  An old distributed network used today as a paid download service. You pay a provider
+  (~$5-15/month) for servers and usually an indexer (also paid) that lists files as
+  .nzb files; a client such as SABnzbd fetches them. Faster and more reliable than
+  public torrents, no seeding, but costs money. Not set up here.
+
+Soulseek
+  Peer-to-peer network, mostly music. Central server handles search/chat; files move
+  directly between users, one-to-one. Strong for rare music and whole
+  discographies. Needs a client that stays online (slskd is the web client for servers),
+  a free account, and a shared folder. Your IP is visible to the peers.
+  Not set up here.
+
+Tubifarry
+  A Lidarr plugin [from search results, UNVERIFIED]: YouTube downloads using Spotify
+  metadata (development versions only), Soulseek via slskd, soundtracks from
+  Sonarr/Radarr, and FFmpeg format conversion. Needs a plugin-enabled Lidarr build;
+  this host runs the regular hotio image. We would NOT use its YouTube part.
+
+Cloudflare and your IP
+  Cloudflare Tunnel (cloudflared) hides the home IP only for visitors to your websites.
+  It does nothing for peer-to-peer. At the last check qBittorrent's outgoing IP was the
+  same as the host's real IP (no VPN). The "warp" container is a proxy-only SOCKS proxy
+  (warp:1080) that nothing P2P uses. [Not designed for P2P and cannot accept incoming
+  connections.]
+
+
+6. VPN NOTES (if Soulseek/torrents are used)
+--------------------------------------------
+- The right setup is a "gluetun" container with a paid VPN that supports port
+  forwarding, routing only qBittorrent (and slskd) through it, with a kill switch.
+- Port forwarding matters: without it, fewer peers and Soulseek in limited mode.
+- Gluetun port forwarding per third-party sources [UNVERIFIED, check gluetun's wiki]:
+    ProtonVPN (NAT-PMP, one rotating port), PIA (one port), Perfect Privacy (several).
+    AirVPN: sources disagree. Mullvad: not confirmed (I recall it dropped port
+    forwarding in 2023, unverified).
+- Prices seen on review sites [UNVERIFIED, check the providers' own pages]:
+    ProtonVPN Plus ~$3-4/month on 1-2 year plans (~$10 monthly)
+    PIA ~$2-2.50/month on long plans (~$12 monthly)
+    AirVPN from ~EUR 2.75/month on 3 years
+    Perfect Privacy ~$9-13/month
+- A VPN hides your IP from peers but does not make downloading legal, and your payment
+  and account still identify you to the provider.
+
+
+7. KEY POINTS FROM THE REDDIT THREAD (opinions, unverified)
+-----------------------------------------------------------
+Question: best self-hosted Spotify replacement with discovery (Daylist, Discover
+Weekly, Daily Mixes), without permanently downloading everything.
+- Navidrome is great for the library but weak at discovery; several people said the
+  realistic fix is habit plus ListenBrainz scrobbling, not a single tool.
+- Recommended combos: Navidrome + Lidarr + Aurral; AudioMuse-AI for sonic playlists;
+  SubWave for AI radio; SoulSync as an all-in-one (claimed to replace the arr stack).
+- Spotify extended history -> ListenBrainz import was suggested for recommendations.
+- Soulseek was the usual answer for niche artists that never reach torrents or stores.
+- Several tools in the thread pull audio from streaming services or YouTube (Downtify,
+  zotify, gamdl, Octo-Fiesta). Not set up; see sections 3 and 3A.
+- Complaint about Aurral: duplicated albums if pointed at an existing library; use it
+  with a separate library or read-only folders.
+- Complaint about DroppedNeedle: heavy, with persistent setup popups.
+
+
+8. TODO / NEXT STEPS
+--------------------
+ [x] Create the Navidrome admin user - done 2026-10-30 (user `Dhruv099`).
+ [x] Fix 1337x in Prowlarr - done 2026-10-30: removed (was hard-failing with HTTP
+     400s). Knaben is now the only fully music-focused sync source; TPB also works.
+ [ ] Set up ListenBrainz scrobbling in Navidrome.
+ [ ] Pick a client (Feishin / Substreamer) and test streaming.
+ [ ] Decide on Aurral (needs Last.fm API key + MusicBrainz email).
+ [ ] Decide on a VPN + gluetun BEFORE adding Soulseek (slskd); apply it to qBittorrent
+     too.
+ [ ] Add more music sources: Bandcamp/Qobuz purchases, Internet Archive, Jamendo,
+     Free Music Archive, or a Usenet/private-tracker account if you get one.
+ [ ] Optional later: AudioMuse-AI once the library has a few hundred tracks.
+ [ ] Remove the Nine Inch Nails test artist from Lidarr if you do not want to keep it.
+
+
+9. FINAL PIPELINE (decided 2026-10-30)
+---------------------------------------
+Serving:   Navidrome (port 4533, admin `Dhruv099`) is the music authority. Jellyfin
+           stays video-only. Clients: Feishin (desktop/web) + Substreamer (mobile),
+           both Subsonic-API. Internet-facing since 2026-10-30 through the
+           Cloudflare tunnel (cloudflared systemd service, ingress: localhost:80)
+           -> NPM -> music.example.com -> navidrome:4533. Navidrome has no
+           built-in rate limiting; third-party Subsonic clients need plain
+           username/password against the API, so Cloudflare Access/Authelia in
+           front would break them - accepted exposure model is a strong unique
+           admin password. ND_REVERSEPROXYWHITELIST=172.18.0.0/16 was added so
+           logs record real client IPs behind NPM.
+History:   Navidrome scrobbling -> ListenBrainz (free account); optional later:
+           self-hosted Koito (Aurral reads either).
+Acquisition is orchestrated by Aurral (port 3001) with sources tried in priority
+order, every file verified against the release and re-tagged by Aurral:
+             1. slskd         (Soulseek, prio 10) - through gluetun
+             2. deemix        (Deezer, prio 15)  - bitrate per Deezer plan, ARL via
+                                                 web UI sign-in, LAN-only UI
+             3. Lidarr        (albums, torrents) - Prowlarr: Knaben primary + TPB
+                                                 -> qBittorrent (through gluetun)
+             4. yt-dlp        (built into Aurral, prio 50) - YouTube Music -> YouTube,
+                                                 single tracks only, lossy
+           Lower priority number = tried first. User approved all four sources
+           (deemix accepted with ARL-credential caution).
+VPN:       PIA recommended (~$2/mo 3-yr, gluetun-native automatic port forwarding).
+           First cutover: gluetun routes qBittorrent only (network_mode:
+           "service:gluetun") - fixes qBittorrent exiting on the host IP (#1 privacy
+           hole). slskd joins gluetun when deployed. Mullvad (dropped PF 2023),
+           NordVPN, ExpressVPN are out; AirVPN/ProtonVPN Plus are the alternatives.
+Deferred:  AudioMuse-AI (official Navidrome plugin as of 0.64.x; revisit at 300+
+           tracks), Usenet, Soulseek-without-VPN.
+Non-goals: Octo-Fiesta, bulk YouTube tools (superseded by Aurral's yt-dlp),
+           SoulSync, DroppedNeedle.
+Build order: 1) enable ListenBrainz in Navidrome 2) Feishin client test 3) PIA +
+           gluetun + qBittorrent cutover 4) Aurral deploy + Lidarr connect
+           (prereq: Lidarr Settings > Metadata > Tag All files, retag existing)
+           5) deemix 6) slskd.
+Paths:     Aurral mounts MEDIA_DIR at /data (same as Lidarr); its Downloads Folder
+           must be visible to Navidrome (use Media/Music/_Aurral-Managed or similar
+           second root); staging stays in /config/_staging outside all libraries.
+
+    STATUS (2026-10-30)
+    Layer          Component                         Status
+    Serving        Navidrome 0.64.2, admin Dhruv099  LIVE - internet-facing via
+                                                     Cloudflare tunnel + NPM
+                                                     (music.example.com)
+    Serving        Feishin / Substreamer clients     pending test
+    History        ListenBrainz scrobbler            pending (free account; settings
+                                                     -> Scrobblers; feeds Aurral)
+    Management     Lidarr (rename ON, 320kbar, tags) LIVE
+    Indexers       Knaben (primary) + TPB; 1337x     LIVE (1337x removed 2026-10-30)
+    Downloads      qBittorrent                       LIVE but still on host real IP
+                                                     -> gluetun is next fix
+    Orchestration  Aurral + Lidarr connect + webhook NEXT BUILD
+    Source         deemix                            NEXT BUILD (after Aurral;
+                                                     needs Deezer plan + ARL sign-in)
+    Source         slskd + PIA/gluetun               AFTER VPN PURCHASE (qBittorrent
+                                                     cutover rides along)
+    Sonic          AudioMuse-AI plugin               DEFERRED to ~300+ tracks
+    Role split     Jellyfin=video, Navidrome=music   decided
+    
+Airtel note: gluetun is an outbound container VPN client, it never touches the
+Airtel router (no router port forwarding needed, brand irrelevant). Airtel CGNAT
+already blocks all inbound connections - a VPN provider's forwarded port replaces
+it and makes the NAT a non-issue. Verify only two things empirically before a
+3-year plan purchase: WireGuard/OpenVPN throughput on the Airtel line, and
+PIA's India->EU/Asia server speed (fits inside PIA's 30-day refund window).
+Occasional MTU: 1400 can help on PPPoE if handshakes stall. ISP sees only
+encrypted VPN traffic to the provider.
+
+10. USEFUL COMMANDS
+-------------------
+Trigger a scan:        docker exec navidrome /app/navidrome scan
+Scan log:              docker logs navidrome --since 5m | grep -i scanner
+Version:               docker exec navidrome /app/navidrome --version
+Lidarr health:         Lidarr UI -> System -> Status (or /api/v1/health)
+Re-check music folder: ls -R /mnt/sdb1/Media/Music | head
