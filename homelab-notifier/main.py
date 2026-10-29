@@ -1,10 +1,16 @@
-import os, asyncio, html, httpx
+import os, asyncio, html, time, httpx
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request
+from datetime import datetime, timezone
+from fastapi import FastAPI
+
+import alertdb
 
 # --- Configuration ---
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
+TELEGRAM_API_BASE = os.getenv("TELEGRAM_API_BASE", "https://api.telegram.org")
+SCRUTINY_URL = os.getenv("SCRUTINY_URL", "http://scrutiny:8080")
+DEADMAN_HOURS = float(os.getenv("DEADMAN_HOURS", 12))  # alert if Scrutiny has had no SMART report for this long
 BESZEL_URL = os.getenv("BESZEL_URL", "http://beszel:8090")
 BESZEL_EMAIL = os.getenv("BESZEL_EMAIL")
 BESZEL_PASSWORD = os.getenv("BESZEL_PASSWORD")
@@ -17,18 +23,86 @@ ROOT_DISK_LABEL = os.getenv("ROOT_DISK_LABEL", "Root")
 # Items already alerted on, so each problem is reported once until it recovers
 alerted_containers: set[str] = set()
 alerted_disks: set[str] = set()
+scrutiny_stale = False
 
-async def send_telegram(message: str):
+async def telegram_post(message: str):
     # message is HTML; escape any dynamic text with html.escape before passing it in
-    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-    async with httpx.AsyncClient() as client:
+    # Raises on failure so the delivery loop can keep the alert queued and retry
+    url = f"{TELEGRAM_API_BASE}/bot{TELEGRAM_TOKEN}/sendMessage"
+    async with httpx.AsyncClient(timeout=15) as client:
         resp = await client.post(url, json={
             "chat_id": TELEGRAM_CHAT_ID,
             "text": message,
             "parse_mode": "HTML"
         })
         if resp.status_code != 200:
-            print(f"Telegram send failed ({resp.status_code}): {resp.text}")
+            raise RuntimeError(f"Telegram {resp.status_code}: {resp.text[:200]}")
+
+async def send_telegram(message: str, ttl: int | None = None, source: str = "beszel"):
+    # Queue the alert; delivery_loop sends it and retries until Telegram accepts it
+    await asyncio.to_thread(alertdb.enqueue, source, message, "", ttl)
+
+def format_age(seconds: int) -> str:
+    if seconds < 3600:
+        return f"{seconds // 60}m"
+    hours, minutes = divmod(seconds // 60, 60)
+    return f"{hours}h {minutes}m" if hours < 48 else f"{hours // 24}d"
+
+async def delivery_loop():
+    last_purge = 0.0
+    while True:
+        try:
+            await asyncio.to_thread(alertdb.expire_old)
+            for row in await asyncio.to_thread(alertdb.due):
+                message = row["message"]
+                late = int(time.time()) - row["received_at"]
+                if late > 120:
+                    message += f"\n\n<i>(delayed {format_age(late)})</i>"
+                try:
+                    await telegram_post(message)
+                except Exception as e:
+                    # str(e) can be empty for timeouts; never let the bot token reach the DB or logs
+                    err = (f"{type(e).__name__}: {e}").replace(str(TELEGRAM_TOKEN), "<token>")
+                    await asyncio.to_thread(alertdb.mark_failed, row["id"], err)
+                    print(f"Delivery of alert #{row['id']} ({row['source']}) failed, attempt {row['attempts'] + 1}: {err}")
+                    break  # Telegram is likely down; retry on the next tick instead of hammering it
+                await asyncio.to_thread(alertdb.mark_delivered, row["id"])
+                print(f"Delivered alert #{row['id']} ({row['source']})")
+            if time.time() - last_purge > 86400:
+                await asyncio.to_thread(alertdb.purge)
+                last_purge = time.time()
+        except Exception as e:
+            print(f"Delivery loop error: {e}")
+        await asyncio.sleep(15)
+
+async def scrutiny_deadman_loop():
+    # The Proxmox cron collector can die silently; warn when Scrutiny stops receiving SMART reports
+    global scrutiny_stale
+    while True:
+        try:
+            async with httpx.AsyncClient(timeout=15) as client:
+                resp = await client.get(f"{SCRUTINY_URL}/api/summary")
+                resp.raise_for_status()
+            summary = resp.json().get("data", {}).get("summary", {})
+            dates = [datetime.fromisoformat(v["smart"]["collector_date"])
+                     for v in summary.values() if (v.get("smart") or {}).get("collector_date")]
+            if dates:
+                age_h = (datetime.now(timezone.utc) - max(dates)).total_seconds() / 3600
+                if age_h > DEADMAN_HOURS and not scrutiny_stale:
+                    scrutiny_stale = True
+                    await send_telegram(
+                        f"<b>Drive Health Alert — no SMART data</b>\n"
+                        f"Scrutiny's last report was <code>{age_h:.1f}h</code> ago. "
+                        f"The collector cron job on Proxmox may have stopped.",
+                        source="scrutiny")
+                elif age_h <= DEADMAN_HOURS and scrutiny_stale:
+                    scrutiny_stale = False
+                    await send_telegram("<b>Drive Health — SMART reports are arriving again</b>", source="scrutiny")
+                print(f"Scrutiny dead-man check OK — last report {age_h:.1f}h ago")
+        except Exception as e:
+            # Scrutiny being down is already covered by Beszel's container check
+            print(f"Scrutiny dead-man check error: {e}")
+        await asyncio.sleep(1800)
 
 async def get_beszel_token():
     # Beszel accounts can live in either collection depending on how they were created
@@ -111,7 +185,8 @@ async def beszel_health_check_loop():
                     await send_telegram(
                         f"<b>Homelab Check</b>\n"
                         f"{status} ({len(containers)} tracked)\n"
-                        f"Disks — " + ", ".join(disk_lines)
+                        f"Disks — " + ", ".join(disk_lines),
+                        ttl=3600  # a stale "all OK" summary is worse than none
                     )
 
         except Exception as e:
@@ -122,21 +197,18 @@ async def beszel_health_check_loop():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    task = asyncio.create_task(beszel_health_check_loop())
+    alertdb.init()
+    tasks = [asyncio.create_task(c()) for c in
+             (beszel_health_check_loop, delivery_loop, scrutiny_deadman_loop)]
     yield
-    task.cancel()
+    for task in tasks:
+        task.cancel()
 
 app = FastAPI(lifespan=lifespan)
 
-@app.post("/watchtower")
-async def watchtower_webhook(request: Request):
-    raw_body = await request.body()
-    print(f"Watchtower raw payload: {raw_body}")
-    try:
-        data = await request.json()
-        report = data.get('report', data.get('message', data.get('body', 'Updates completed.')))
-    except Exception:
-        report = raw_body.decode('utf-8', errors='replace') or 'Updates completed (empty payload).'
-    msg = f"<b>Nightly Update Report</b>\n\n{html.escape(str(report))}"
-    await send_telegram(msg)
-    return {"status": "ok"}
+# Webhooks (Watchtower, Scrutiny) are received by inbox.py, which writes to the shared alert DB
+
+@app.get("/health")
+async def health():
+    pending = await asyncio.to_thread(lambda: len(alertdb.due(limit=1000)))
+    return {"status": "ok", "pending_alerts": pending}

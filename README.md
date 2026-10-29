@@ -31,7 +31,7 @@ It documents the architecture, services, and infrastructure used in the environm
 | Container UI | Portainer | `portainer/` | container management UI |
 | Monitoring | Beszel | `beszel/` | system & container health metrics (hub + host agent, incl. data drives) |
 | Updates | Watchtower | `watchtower/` | automated container image updates |
-| Alerting | Notifier | `homelab-notifier/` | Telegram alerts for container/disk health and update reports |
+| Alerting | Notifier + inbox | `homelab-notifier/` | Telegram alerts for container/disk health, Watchtower update reports and Scrutiny drive health, queued in SQLite so none are lost |
 | File management | FileBrowser Quantum | `filebrowser/` | web-based file browser for the data drives |
 | Reading | Kavita | `kavita/` | comic/ebook server |
 | Reading | Openbooks | `openbooks/` | Calibre/IRC ebook search and download |
@@ -53,7 +53,7 @@ This repository is organized as a modular homelab stack. Each service has its ow
 - Most services share the `homelab` network for internal communication, while external traffic is routed through Nginx Proxy Manager.
 - Host-specific paths, credentials, and runtime configuration are moved into `.env` to keep the repository reusable and private.
 - Sensitive mounts and secrets are documented in `SECURITY.md` rather than embedded inside compose files.
-- The notifier polls Beszel's API for health checks and receives webhook calls from Watchtower after update runs; it is not a standalone service like the others.
+- Alerts flow through a SQLite queue (`homelab-notifier/data/alerts.db`): the `inbox` container receives webhooks from Watchtower and Scrutiny and only stores them; the `notifier` polls Beszel, enqueues its own alerts, and delivers everything to Telegram with retry. If the notifier or Telegram is down, alerts wait in the queue. The notifier also warns if Scrutiny gets no SMART report for 12h (the Proxmox collector cron may have stopped).
 ---
 
 ## What this repo includes

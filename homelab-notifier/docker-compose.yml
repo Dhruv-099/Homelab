@@ -5,9 +5,17 @@ services:
     image: homelab-notifier:local
     container_name: homelab-notifier
     restart: unless-stopped
-    ports:
-      - "7440:8000"
+    volumes:
+      # Shared alert queue (SQLite, written by the inbox, drained by the notifier)
+      - ./data:/data
     environment:
+      - PYTHONUNBUFFERED=1
+      - ALERT_DB=/data/alerts.db
+      # Override only to test delivery retries (point at a dead host)
+      - TELEGRAM_API_BASE=${TELEGRAM_API_BASE:-https://api.telegram.org}
+      # Warn if Scrutiny gets no SMART report for this many hours (Proxmox collector cron died)
+      - SCRUTINY_URL=http://scrutiny:8080
+      - DEADMAN_HOURS=${DEADMAN_HOURS:-12}
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
       - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
       - BESZEL_URL=${BESZEL_URL}
@@ -18,6 +26,24 @@ services:
       - ROOT_DISK_LABEL=${ROOT_DISK_LABEL:-Root}
     labels:
       # Locally built image — nothing for Watchtower to pull
+      - "com.centurylinklabs.watchtower.enable=false"
+    networks:
+      - homelab
+
+  inbox:
+    # Webhook receiver for Watchtower and Scrutiny: only writes to the alert queue, so it
+    # stays up (and rarely changes) while the notifier is rebuilt or Telegram is unreachable
+    image: homelab-notifier:local
+    container_name: homelab-inbox
+    command: ["python", "-u", "inbox.py"]
+    restart: unless-stopped
+    ports:
+      - "7440:8000"
+    environment:
+      - ALERT_DB=/data/alerts.db
+    volumes:
+      - ./data:/data
+    labels:
       - "com.centurylinklabs.watchtower.enable=false"
     networks:
       - homelab

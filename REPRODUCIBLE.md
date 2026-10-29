@@ -117,9 +117,9 @@ docker compose logs -f <service>
 8. `warp` — Cloudflare WARP proxy; must come after `arr` because it joins `arr_network`
 9. `jellyfin`, `navidrome`, `kavita`, `openbooks` — media services
 10. `beszel` — system and container metrics
-11. `homelab-notifier` — Telegram alerts; build with `docker compose up -d --build`
-12. `watchtower` — after the notifier, since it posts update reports to it
-13. `scrutiny` — drive monitoring
+11. `homelab-notifier` — Telegram alerts (runs two containers, `notifier` and `inbox`, sharing `data/alerts.db`); build with `docker compose up -d --build`
+12. `watchtower` — after the notifier, since it posts update reports to the `inbox` (`WATCHTOWER_NOTIFICATION_URL`)
+13. `scrutiny` — drive monitoring; for alerts add `config/scrutiny.yaml` with a `notify.urls` entry `generic://homelab-inbox:8000/scrutiny?template=json&disabletls=yes&contenttype=application/json`. SMART needs the real disks, so run the `scrutiny-collector-metrics` binary on the Proxmox host (cron every 6h) and point it at this hub
 14. `vikunja`, `trillium`, `filebrowser` — tasks, notes, file management
     - `bookstack` is optional and not deployed in the live homelab (Trilium covers notes/docs). Deploy it the same way if you want a wiki.
 15. `Kiwix`, `BentoPDF`, `OmniTools` — optional standalone utilities
