@@ -107,13 +107,16 @@ services:
     image: ghcr.io/hotio/qbittorrent:latest
     restart: unless-stopped
     ports:
-      - 8090:8080
+      # Host and container port must match: qBittorrent rejects requests whose
+      # Host header port differs from its own WebUI port (401 Unauthorized).
+      - 8090:8090
       - 6881:6881
       - 6881:6881/udp
     environment:
       PUID: ${PUID:-1000}
       PGID: ${PGID:-1000}
       TZ: Asia/Kolkata
+      WEBUI_PORTS: 8090/tcp
       TORRENTING_PORT: 6881
     dns:
       - 1.1.1.1
