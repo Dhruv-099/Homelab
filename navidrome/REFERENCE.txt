@@ -209,8 +209,11 @@ Non-goals: Octo-Fiesta, bulk YouTube tools (superseded by Aurral's yt-dlp),
            SoulSync, DroppedNeedle.
 Build order: 1) enable ListenBrainz in Navidrome 2) Feishin client test 3) PIA +
            gluetun + qBittorrent cutover 4) Aurral deploy + Lidarr connect
-           (prereq: Lidarr Settings > Metadata > Tag All files, retag existing)
            5) deemix 6) slskd.
+           (Done 2026-10-30: Lidarr tagging prereq - Settings>Metadata config
+           writeAudioTags=sync via PUT /api/v1/config/metadataProvider; NIN
+           retagged, 36/36 MusicBrainz IDs present. Aurral stack started;
+           first-run setup pending user visit to :3001.)
 Paths:     Aurral mounts MEDIA_DIR at /data (same as Lidarr); its Downloads Folder
            must be visible to Navidrome (use Media/Music/_Aurral-Managed or similar
            second root); staging stays in /config/_staging outside all libraries.
@@ -223,11 +226,24 @@ Paths:     Aurral mounts MEDIA_DIR at /data (same as Lidarr); its Downloads Fold
     Serving        Feishin / Substreamer clients     pending test
     History        ListenBrainz scrobbler            pending (free account; settings
                                                      -> Scrobblers; feeds Aurral)
-    Management     Lidarr (rename ON, 320kbar, tags) LIVE
-    Indexers       Knaben (primary) + TPB; 1337x     LIVE (1337x removed 2026-10-30)
+    Management     Lidarr (rename ON, 320kbar, tags) LIVE - writeAudioTags=sync set
+                                                      2026-10-30; all 36 NIN tracks
+                                                      carry MusicBrainz IDs
+    Accounts       MetaBrainz (MusicBrainz+          CREATED 2026-10-30 - login
+                   ListenBrainz SSO)                 <your-login> / verified email
+                                                      <your-email>;
+                                                      use it as Aurral's MusicBrainz
+                                                      contact email
+    Indexers       Knaben (primary) + TPB; 1337x     LIVE (1337x removed 2026-10-30;
+                                                      flaky EZTV/Lime/Uindex kept:
+                                                      auto-recovery, video arrs use
+                                                      the TV/movie indexers)
     Downloads      qBittorrent                       LIVE but still on host real IP
                                                      -> gluetun is next fix
-    Orchestration  Aurral + Lidarr connect + webhook NEXT BUILD
+    Orchestration  Aurral                            RUNNING :3001 (2026-10-30);
+                                                      first-run + Lidarr connect
+                                                      pending (user visits
+                                                      http://<host>:3001)
     Source         deemix                            NEXT BUILD (after Aurral;
                                                      needs Deezer plan + ARL sign-in)
     Source         slskd + PIA/gluetun               AFTER VPN PURCHASE (qBittorrent
