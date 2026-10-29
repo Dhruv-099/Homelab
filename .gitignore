@@ -26,6 +26,7 @@ nextcloud/custom_apps/
 nextcloud/themes/
 nextcloud/db/
 kavita/config/
+aurral/config/
 scrutiny/config/
 scrutiny/influxdb/
 forgejo/forgejo/

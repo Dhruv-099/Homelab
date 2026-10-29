@@ -1,0 +1,37 @@
+services:
+  aurral:
+    container_name: aurral
+    image: ghcr.io/lklynet/aurral:latest
+    restart: unless-stopped
+    ports:
+      - 3001:3001
+    environment:
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
+      TZ: Asia/Kolkata
+    volumes:
+      # Same /data convention as Lidarr/qBittorrent: the whole media root so
+      # Aurral can read Lidarr's library at /data/Music.
+      - type: bind
+        source: ${MEDIA_DIR}
+        target: /data
+        bind:
+          create_host_path: false
+      # Aurral config + its download staging. Staging (/config/_staging) stays
+      # OUTSIDE every media-server library per Aurral's requirement.
+      - ./config:/config
+    networks:
+      - homelab
+
+networks:
+  homelab:
+    external: true
+
+# Intended layout once Aurral is configured (see navidrome/REFERENCE.txt sec 9):
+#   - Downloads Folder  = /data/Music/_Aurral-Managed  (host:
+#     /mnt/sdb1/Media/Music/_Aurral-Managed — visible to Navidrome so published
+#     playlists play; Lidarr ignores the folder, it matches no artist)
+#   - Sources (Settings > Download clients), priority = lower tried first:
+#       slskd 10 -> deemix 15 -> Lidarr (albums) -> yt-dlp 50
+#   - Connect Lidarr at Settings > Lidarr (http://lidarr:8686 + API key),
+#     ListenBrainz in Settings > ListenBrainz after scrobbling is enabled.
