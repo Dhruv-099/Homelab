@@ -2,6 +2,8 @@
 
 Agent/LLM notes for this repo: a Docker Compose homelab where each service lives in its own folder with its own `docker-compose.yml`. Secrets live in the shared root `.env` (never commit it, never print it into chat — `.env.example` is the safe template). Most stacks join the external `homelab` Docker network; create it with `docker network create homelab` if missing. Some compose files add a dedicated internal network (e.g. `arr/` uses `arr_network`).
 
+**Push convention (user preference, 2026-11-06): always double-push** — `git push origin main` **and** `git push forgejo main` over the SSH remotes. Do not push only to origin and rely on the Forgejo 8h mirror to catch up, and never embed the PAT into any git URL for these repos.
+
 ---
 
 ## 1. Mirroring GitHub repos into Forgejo
