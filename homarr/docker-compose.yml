@@ -1,0 +1,31 @@
+services:
+  homarr:
+    container_name: homarr
+    image: ghcr.io/homarr-labs/homarr:latest
+    restart: unless-stopped
+    ports:
+      - 7575:7575
+    volumes:
+      # Read-only socket so Homarr can list containers for the Docker integration
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Named volume: the image bundles /app/db/migrations, which a host bind
+      # would hide (startup aborts). Docker seeds it from the image on first use.
+      - homarr_db:/app/db
+      - ./data/appdata/configs:/app/data/configs
+      - ./data/appdata/certificates:/app/data/certificates
+      - ./data/appdata/icons:/app/data/icons
+      - ./data/appdata/fonts:/app/data/fonts
+      - ./data/appdata/keycloak:/app/data/keycloak
+      - ./data/appdata/log:/app/log
+    environment:
+      # Required: encrypts board secrets in the DB. From `openssl rand -hex 32`.
+      SECRET_ENCRYPTION_KEY: ${HOMARR_SECRET_ENCRYPTION_KEY}
+    networks:
+      - homelab
+
+volumes:
+  homarr_db:
+
+networks:
+  homelab:
+    external: true

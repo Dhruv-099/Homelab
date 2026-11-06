@@ -5,6 +5,13 @@
 .env.*
 !.env.example
 
+# Runtime config overlays that hold session secrets and churn (deemix may
+# persist the ARL + Spotify OAuth tokens here; slskd keeps API keys + admin
+# hash). Volumes are recreated fresh from compose comments on redeploy.
+deemix/config/
+slskd/config/
+gluetun/gluetun/
+
 ### --- Docker & Infrastructure ---
 # Ignore local data volumes (don't push your actual Postgres data or Immich photos!)
 **/data/

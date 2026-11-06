@@ -1,0 +1,59 @@
+# Gluetun VPN container — ROUTES slskd (and later qBittorrent) through PIA.
+# Starting point: PIA 3-yr recommended plan (~$2/mo). Get credentials from
+# PIA account page; also create a WireGuard key there OR let gluetun derive it.
+# Once PIA credentials exist: fill the .env below (gluetun section), then:
+#   cd ~/Homelab/gluetun && docker compose up -d
+#   docker compose logs -f | grep -i "port forward"   # wait for PF port
+#
+# After it's healthy, start slskd:
+#   cd ~/Homelab/slskd && docker compose up -d
+# and cut qBittorrent over by adding `network_mode: service:gluetun` to its
+# compose (see REFERENCE.txt sec 9).
+services:
+  gluetun:
+    image: qmcgaw/gluetun
+    container_name: gluetun
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    ports:
+      # slskd web UI + peer/listen ports (slskd publishes through gluetun)
+      - "5030:5030"
+      - "50300-50309:50300-50309"
+    environment:
+      # ── provider ────────────────────────────────────────────────
+      VPN_SERVICE_PROVIDER: private internet access
+      VPN_TYPE: wireguard
+      # Fill from PIA account (KEEP SECRET - lives in .env, gitignored)
+      PIA_USER: ${PIA_USER:?set PIA_USER in .env}
+      PIA_PASSWORD: ${PIA_PASSWORD:?set PIA_PASSWORD in .env}
+      # Server: India has no PIA exit; nearest reliable peers are Mumbai
+      # routes via international ASN - use europe/uk or asia (pick latency).
+      SERVER_HOSTNAMES: ${GLUETUN_SERVER:-london401}
+      # ── port forwarding ─────────────────────────────────────────
+      # PIA NAT-PMP auto port forward is native in gluetun (WireGuard now
+      # supported). Gluetun writes the assigned port to
+      # /tmp/gluetun/forwarded_port for slskd to read.
+      VPN_PORT_FORWARDING: on
+      FIREWALL_OUTBOUND_SUBNETS: 172.18.0.0/16,192.168.0.0/16
+      TZ: Asia/Kolkata
+      # PPPoE/Airtel handshake stalls were seen fixed by clamping MTU.
+      VPN_MTU: 1400
+    volumes:
+      - ./gluetun:/gluetun
+    networks:
+      - homelab
+
+networks:
+  homelab:
+    external: true
+
+# qBittorrent cutover note (do when comfy, same day):
+#   - add "- 8090:8090" to gluetun's ports
+#   - in ~/Homelab/arr (or wherever qBittorrent's compose lives), replace
+#     `ports:` with `network_mode: "container:gluetun"` and drop the old
+#     published-post mapping.
+# slskd attaches with `network_mode: "container:gluetun"` (no ports of
+# its own) - see ~/Homelab/slskd/docker-compose.yml.

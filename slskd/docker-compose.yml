@@ -1,0 +1,44 @@
+# slskd — Soulseek client. MUST ride behind gluetun per the locked decision:
+# never expose Soulseek traffic on the real IP.
+#
+# NOTE: ./config (mounted at /app/.data) holds appstate, API keys and the
+# admin password hash once first-run happens — it is gitignored, NOT part of
+# the repo. Recreate settings through the UI on redeploy.
+#
+# Order of operations (once PIA credentials exist):
+#   1. cd ~/Homelab/gluetun && docker compose up -d     (container name: gluetun)
+#   2. cd ~/Homelab/slskd   && docker compose up -d    (attaches INSIDE gluetun)
+#   3. UI http://<server>:5030 (published via gluetun) -> create admin
+#   4. slskd UI -> API Keys -> generate -> keep for Aurral
+#   5. Aurral Setup > Sources > slskd:
+#        URL http://slskd:5030   API key <from 3>   Priority 10
+#        Preferred format: FLAC, strict OFF
+#   6. Later (qBittorrent cut-off): set Qbt network_mode to "container:gluetun"
+#      AFTER declaring gluetun's extra port mapping for 8090.
+services:
+  slskd:
+    image: slskd/slskd:latest
+    container_name: slskd
+    restart: unless-stopped
+    # All networking (incl. published ports) belongs to the gluetun container;
+    # slskd itself declares none. SLSKD listens uselessly on its internal stack.
+    network_mode: "container:gluetun"
+    environment:
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
+      TZ: Asia/Kolkata
+      SLSKD_APP_DIR: /app/.data
+      SLSKD_SHARED_DIR: /data/Music/_Aurral-Managed
+      SLSKD_DOWNLOADS_DIR: /data/Music/_Aurral-Managed
+      SLSKD_INCOMPLETE_DIR: /data/Music/_Aurral-Incomplete
+    volumes:
+      - type: bind
+        source: ./config
+        target: /app/.data
+        bind:
+          create_host_path: true
+      - type: bind
+        source: ${MEDIA_DIR}
+        target: /data
+        bind:
+          create_host_path: false

@@ -1,0 +1,45 @@
+services:
+  deemix:
+    container_name: deemix
+    image: registry.gitlab.com/bockiii/deemix-docker:latest
+    restart: unless-stopped
+    ports:
+      # UI is meant for LAN only (ARL sign-in happens here). Do not expose
+      # through NPM/Cloudflare.
+      - 6595:6595
+    environment:
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
+      TZ: Asia/Kolkata
+      # Where deemix writes files. Aurral reads from here (shared /data root)
+      # and copies/ingests into its own staging before publishing.
+      # deemix saves this under /config after first run; point download folder
+      # to /data/Music/_Aurral-Managed in Settings (UI) on first visit.
+    volumes:
+      # Runtime state only: deemix stores the ARL credential, Spotify OAuth
+      # tokens, logs and queue state here. Gitignored — never commit it.
+      - type: bind
+        source: ./config
+        target: /config
+        bind:
+          create_host_path: true
+      - type: bind
+        source: ${MEDIA_DIR}
+        target: /data
+        bind:
+          create_host_path: false
+    networks:
+      - homelab
+
+networks:
+  homelab:
+    external: true
+
+# first-run checklist (needs the USER, ~2 min):
+#   1. open http://<server>:6595
+#   2. sign in with ARL (paste cookie from deezer.com session - do NOT share it
+#      through chat; it is account-equivalent credential)
+#   3. Settings (UI): set Download folder to /data/Music/_Aurral-Managed
+#   4. Aurral picks it up automatically once wired (see REFERENCE.txt sec 9);
+#      Change bitrate in Aurral's deemix settings if the plan upgrades,
+#      free Deezer = MP3 128 (value 1), 320 (3), FLAC (9).

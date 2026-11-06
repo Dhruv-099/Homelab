@@ -9,6 +9,9 @@ services:
       PUID: ${PUID:-1000}
       PGID: ${PGID:-1000}
       TZ: Asia/Kolkata
+      # MusicBrainz API contact (required by MB etiquette; the settings-UI
+      # "Metadata" section drops this field, env is the supported path).
+      CONTACT_EMAIL: haradiancharlus@gmail.com
     volumes:
       # Same /data convention as Lidarr/qBittorrent: the whole media root so
       # Aurral can read Lidarr's library at /data/Music.

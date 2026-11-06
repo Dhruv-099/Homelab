@@ -207,13 +207,17 @@ Deferred:  AudioMuse-AI (official Navidrome plugin as of 0.64.x; revisit at 300+
            tracks), Usenet, Soulseek-without-VPN.
 Non-goals: Octo-Fiesta, bulk YouTube tools (superseded by Aurral's yt-dlp),
            SoulSync, DroppedNeedle.
-Build order: 1) enable ListenBrainz in Navidrome 2) Feishin client test 3) PIA +
-           gluetun + qBittorrent cutover 4) Aurral deploy + Lidarr connect
-           5) deemix 6) slskd.
-           (Done 2026-10-30: Lidarr tagging prereq - Settings>Metadata config
-           writeAudioTags=sync via PUT /api/v1/config/metadataProvider; NIN
-           retagged, 36/36 MusicBrainz IDs present. Aurral stack started;
-           first-run setup pending user visit to :3001.)
+Build order: 1) enable ListenBrainz in Navidrome 2) Feishin client test
+           3) PIA purchase unlocks three: gluetun + qBittorrent cutover,
+           slskd live (prio 10), Deezer account signup via VPN -> ARL ->
+           deemix fully hot (prio 15; bump bitrate if paid tier).
+           4) optional: deemix Spotify dev-app (skipped - Aurral's native
+           Spotify OAuth playlist import covers it).
+           (Done 2026-11-06: Aurral onboarded via API (admin dhruv099, Lidarr
+           connected, downloads folder set); first request -> download ->
+           Navidrome verified (Queen, yt-dlp source); ListenBrainz scrobble
+           verified; deemix wired but dormant - no Deezer account possible
+           from India until VPN exists.)
 Paths:     Aurral mounts MEDIA_DIR at /data (same as Lidarr); its Downloads Folder
            must be visible to Navidrome (use Media/Music/_Aurral-Managed or similar
            second root); staging stays in /config/_staging outside all libraries.
@@ -240,14 +244,39 @@ Paths:     Aurral mounts MEDIA_DIR at /data (same as Lidarr); its Downloads Fold
                                                       the TV/movie indexers)
     Downloads      qBittorrent                       LIVE but still on host real IP
                                                      -> gluetun is next fix
-    Orchestration  Aurral                            RUNNING :3001 (2026-10-30);
-                                                      first-run + Lidarr connect
-                                                      pending (user visits
-                                                      http://<host>:3001)
-    Source         deemix                            NEXT BUILD (after Aurral;
-                                                     needs Deezer plan + ARL sign-in)
-    Source         slskd + PIA/gluetun               AFTER VPN PURCHASE (qBittorrent
-                                                     cutover rides along)
+    Orchestration  Aurral                            RUNNING :3001 (2026-10-30) -
+                                                      ONBOARDED 2026-11-06 via API:
+                                                      admin `dhruv099` (password in
+                                                      /tmp/opencode/aurral_pw, change
+                                                      on first login), Lidarr
+                                                      connected (http://lidarr:8686,
+                                                      root /data/Music, search-on-add
+                                                      ON), downloads folder
+                                                      /data/Music/_Aurral-Managed,
+                                                      MusicBrainz contact via
+                                                      CONTACT_EMAIL env in compose.
+    Source         deemix                            DEPLOYED :6595 (2026-11-06);
+                                                    wired into Aurral prio 15,
+                                                    bitrate MP3-128 (free Deezer);
+                                                    DORMANT 2026-11-06: Deezer has
+                                                    no Indian availability - user
+                                                    will create the account behind
+                                                    PIA/VPN when purchased (same
+                                                    day as gluetun+slskd). ARL via
+                                                    web UI only, never in chat.
+                                                    Set download folder
+                                                    /data/Music/_Aurral-Managed at
+                                                    sign-in; bump bitrate when
+                                                    plan does
+    Source         slskd + PIA/gluetun               SCAFFOLDED 2026-11-06, NOT
+                                                    STARTED (locked: no Soulseek
+                                                    on real IP). gluetun/ compose
+                                                    ready, PIA env stubs in .env
+                                                    (PIA_USER/PIA_PASSWORD com-
+                                                    mented), slskd/ attaches via
+                                                    network_mode container:glue-
+                                                    tun, priority 10, FLAC
+                                                    strict-off
     Sonic          AudioMuse-AI plugin               DEFERRED to ~300+ tracks
     Role split     Jellyfin=video, Navidrome=music   decided
     
