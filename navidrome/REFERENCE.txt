@@ -228,8 +228,17 @@ Paths:     Aurral mounts MEDIA_DIR at /data (same as Lidarr); its Downloads Fold
                                                      Cloudflare tunnel + NPM
                                                      (music.example.com)
     Serving        Feishin / Substreamer clients     pending test
-    History        ListenBrainz scrobbler            pending (free account; settings
-                                                     -> Scrobblers; feeds Aurral)
+    History        ListenBrainz scrobbler            LIVE - verified on Charlus099
+                                                      (2026-11-06: Queen scrobble
+                                                      landed via Substreamer)
+                                                      Spotify lifetime history
+                                                      imported into Aurral
+                                                      2026-11-07: 2818 artists,
+                                                      2020-07 to 2026-11 span, top
+                                                      tastes Billie Eilish/Taylor
+                                                      Swift/Lana Del Rey + ambient
+                                                      playlist artists; discovery
+                                                      refresh triggered on save
     Management     Lidarr (rename ON, 320kbar, tags) LIVE - writeAudioTags=sync set
                                                       2026-10-30; all 36 NIN tracks
                                                       carry MusicBrainz IDs
