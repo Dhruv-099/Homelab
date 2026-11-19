@@ -123,7 +123,8 @@ docker compose logs -f <service>
 14. `vikunja`, `trillium`, `filebrowser` — tasks, notes, file management
     - `bookstack` is optional and not deployed in the live homelab (Trilium covers notes/docs). Deploy it the same way if you want a wiki.
 15. `Kiwix`, `BentoPDF`, `OmniTools` — optional standalone utilities
-16. Netbird — mesh VPN, deployed separately (not tracked in this repo; see NetBird docs)
+16. `homarr` — dashboard on port **7575**; see [Intranet services → Homarr](#homarr-dashboard-7575) for the DB-mount trap, the PVE root-CA step and the service-side tweaks (arr `AllowedHosts`, Nextcloud `trusted_domains`) it depends on
+17. Netbird — mesh VPN, deployed separately (not tracked in this repo; see NetBird docs)
 
 ### Portainer first run
 
@@ -150,7 +151,7 @@ Everything below lives on the host, outside Docker, so the compose files alone d
 
 Two layers, because Docker-published ports bypass ufw's `INPUT` rules:
 
-1. **ufw** (default deny incoming) allows only SSH (22), DNS (53/55) and NPM admin (82) from the LAN (`192.168.1.0/24`), the VPN (`100.95.0.0/16`) and Docker networks (`172.16.0.0/12`).
+1. **ufw** (default deny incoming) allows only SSH (22), DNS (53/55) and the AdGuard Home web UI (82) from the LAN (`192.168.1.0/24`), the VPN (`100.95.0.0/16`) and Docker networks (`172.16.0.0/12`). Docker-published ports (NPM admin :81, etc.) are governed by the `homelab-lockdown` `DOCKER-USER` chain below, not ufw.
 2. **`homelab-lockdown.service`** ([`host/systemd/`](host/systemd/homelab-lockdown.service)) rewrites `DOCKER-USER` at every boot so published container ports accept only the LAN, the VPN and Docker bridges, and drop everything arriving on the physical NIC (`ens18`; change it if your interface differs).
 
 ```bash
@@ -207,6 +208,22 @@ Example mappings:
 - `vaultwarden.local.example` → `192.168.1.12`
 
 Make sure your LAN clients use AdGuard Home as their DNS resolver.
+
+### Homarr dashboard (7575)
+
+`homarr/docker-compose.yml` runs the dashboard with the Docker socket mounted read-only. Details that are easy to get wrong:
+
+- **DB mount trap**: this build keeps its SQLite DB at `/appdata/db/db.sqlite` (`DB_URL`), so the stack bind-mounts `./data/appdata/db` there (plus `./data/appdata/redis` and `./data/appdata/trusted-certificates`). Do **not** mount anything at `/app/db` — the image bundles its DB migrations there, and any mount hides or stale-copies them (startup aborts with `Cannot find module '/app/db/migrations/sqlite/migrate.cjs'`, or board creation fails with `NOT NULL board.primary_color`).
+- First-run wizard (`/init`) creates the admin account. For remote wiring, generate an admin API key in the UI and put it in the root `.env` as `HOMARR_API_KEY`; the same file carries `immich_api_key`, `Jellyfin_api_key` and the per-service credentials for qBittorrent, Navidrome, Nextcloud (app password), Trilium (ETAPI token), AdGuard and Proxmox.
+- **Proxmox TLS**: the PVE integration needs the PVE root CA in `homarr/data/appdata/trusted-certificates/` (bind-mounted into the container), then `docker restart homarr`. Fetch it with any API token:
+  ```bash
+  curl -sk -H "Authorization: PVEAPIToken=root@pam!<tokenId>=<secret>" \
+    https://<pve-ip>:8006/api2/json/nodes/<node>/certificates/info |
+    jq -r '.data[] | select(.filename=="pve-root-ca.pem") | .pem' \
+    > homarr/data/appdata/trusted-certificates/pve-root-ca.pem
+  ```
+  When adding the integration, the username secret is just `root` — the app appends `@<realm>` itself.
+- **Service-side tweaks for container-name access**: the *arr apps each need their own Docker name in `AllowedHosts` inside `~/arr/config/<app>/config.xml` (Sonarr's list literally allowed `radarr` instead of `sonarr`; Prowlarr's was empty), and Nextcloud needs the name in `trusted_domains` (`docker exec -u www-data nextcloud php occ config:system:set trusted_domains 2 --value=nextcloud`). Integration URLs use `http://sonarr:8989` style hostnames; Jellyseerr's API key is at `main.apiKey` in its `settings.json` (the top-level `apiKey` is `null`).
 
 ---
 

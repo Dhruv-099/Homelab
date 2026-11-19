@@ -8,9 +8,13 @@ services:
     volumes:
       # Read-only socket so Homarr can list containers for the Docker integration
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      # Named volume: the image bundles /app/db/migrations, which a host bind
-      # would hide (startup aborts). Docker seeds it from the image on first use.
-      - homarr_db:/app/db
+      # DB_URL points at /appdata/db/db.sqlite (SQLite) — persist it on the host.
+      # NOTE: /app/db is intentionally NOT mounted: the image bundles its DB
+      # migrations there, and any mount (bind or seeded volume) hides or stale-
+      # copies them. Migrations live with the image, data lives here.
+      - ./data/appdata/db:/appdata/db
+      - ./data/appdata/redis:/appdata/redis
+      - ./data/appdata/trusted-certificates:/appdata/trusted-certificates
       - ./data/appdata/configs:/app/data/configs
       - ./data/appdata/certificates:/app/data/certificates
       - ./data/appdata/icons:/app/data/icons
@@ -22,9 +26,6 @@ services:
       SECRET_ENCRYPTION_KEY: ${HOMARR_SECRET_ENCRYPTION_KEY}
     networks:
       - homelab
-
-volumes:
-  homarr_db:
 
 networks:
   homelab:
