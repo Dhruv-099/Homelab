@@ -6,15 +6,15 @@ services:
     ports:
       - "8094:80"
     volumes:
-      # Mount shared media library from host storage. Use `${MEDIA_DIR}` in
+      # Mount Kavita's book library from host storage. Use `${KAVITA_BOOKS_DIR}` in
       # `.env` to avoid exposing host paths in the repo.
       - type: bind
-        source: ${MEDIA_DIR}
-        target: /data/books
+        source: ${KAVITA_BOOKS_DIR}
+        target: /books
         bind:
           create_host_path: false
     # Server name shown to connecting clients: set your own in `.env` if you'd rather not hardcode it
-    command: --name homelab --persist --dir /data
+    command: --name homelab --persist --dir /books
     environment:
       - BASE_PATH=/
     networks:
