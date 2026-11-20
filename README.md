@@ -24,7 +24,7 @@ It documents the architecture, services, and infrastructure used in the environm
 | Media management | Radarr/Sonarr/Lidarr/Bazarr/Prowlarr | `arr/` | automated media downloads and organization |
 | Downloads & requests | qBittorrent/Jellyseerr/FlareSolverr | `arr/` | torrent client, media requests, Cloudflare challenge solver |
 | Music | Navidrome | `navidrome/` | personal music streaming (internet-facing via Cloudflare tunnel + NPM) |
-| Music orchestration | Aurral | `aurral/` | request/discovery orchestrator: Lidarr + deemix + slskd + yt-dlp priority chain, playlists and flows |
+| Music orchestration | Aurral | `aurral/` | request/discovery orchestrator: Lidarr + deemix + slskd + yt-dlp priority chain, playlists and flows (internet-facing via Cloudflare tunnel + NPM) |
 | Music sources | deemix | `deemix/` | Deezer download client (LAN-only UI, ARL sign-in) |
 | Music sources | slskd | `slskd/` | Soulseek client — runs inside gluetun only (never on the real IP) |
 | VPN routing | gluetun | `gluetun/` | outbound VPN container for slskd + qBittorrent (PIA, auto port-forwarding) |
