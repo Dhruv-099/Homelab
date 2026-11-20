@@ -224,6 +224,7 @@ Make sure your LAN clients use AdGuard Home as their DNS resolver.
   ```
   When adding the integration, the username secret is just `root` — the app appends `@<realm>` itself.
 - **Service-side tweaks for container-name access**: the *arr apps each need their own Docker name in `AllowedHosts` inside `~/arr/config/<app>/config.xml` (Sonarr's list literally allowed `radarr` instead of `sonarr`; Prowlarr's was empty), and Nextcloud needs the name in `trusted_domains` (`docker exec -u www-data nextcloud php occ config:system:set trusted_domains 2 --value=nextcloud`). Integration URLs use `http://sonarr:8989` style hostnames; Jellyseerr's API key is at `main.apiKey` in its `settings.json` (the top-level `apiKey` is `null`).
+- **Tile status pings** run from the Homarr container: local tiles ping container-name URLs (`http://beszel:8090`), because host-IP pings are blocked by the `DOCKER-USER` lockdown hairpin path for several published ports; the Cloudflare-exposed services ping their public `*.bobalhouse.co.in` URLs so their dot reflects the tunnel path. Any HTTP response counts as up.
 
 ---
 
